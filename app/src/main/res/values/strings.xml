@@ -1,0 +1,56 @@
+<resources>
+    <string name="app_name">LightNotes</string>
+    <string name="search_hint">Search notes…</string>
+    <string name="notes_count">%d notes</string>
+    <string name="title_hint">Title</string>
+    <string name="content_hint">Start writing (supports Markdown and Math $…$ or $$…$$)</string>
+    <string name="folder_all">All</string>
+    <string name="folder_pinned">Pinned</string>
+    <string name="folder_trash">Trash</string>
+    <string name="folder_default">General</string>
+    <string name="empty_notes">No notes yet</string>
+    <string name="empty_notes_desc">Tap the + button to create your first note</string>
+    <string name="settings_title">Settings</string>
+    <string name="backup_restore">Backup &amp; Restore</string>
+    <string name="import_heytap">Import ColorOS / HeyTap Backup</string>
+    <string name="export_json">Export Unencrypted JSON</string>
+    <string name="import_json">Import JSON Backup</string>
+    <string name="export_encrypted">Export Encrypted Backup (.enotes)</string>
+    <string name="import_encrypted">Import Encrypted Backup (.enotes)</string>
+    <string name="markdown_mode">Editor Render Mode</string>
+    <string name="math_engine">Math Engine</string>
+    <string name="encryption_password">Password</string>
+    <string name="delete_note_confirm">Move note to Trash?</string>
+    <string name="restore_note">Restore</string>
+    <string name="permanent_delete">Delete Permanently</string>
+
+    <!-- Sections -->
+    <string name="section_pinned">Pinned</string>
+    <string name="section_notes">Notes</string>
+
+    <!-- AI Assistant -->
+    <string name="ai_assistant">AI Assistant</string>
+    <string name="ai_grammar">Fix Grammar &amp; Spelling</string>
+    <string name="ai_summarize">Summarize Note</string>
+    <string name="ai_continue">Continue Writing</string>
+    <string name="ai_concise">Make Concise</string>
+    <string name="ai_checklist">Convert to Checklist</string>
+    <string name="ai_markdown">Format as Markdown / LaTeX</string>
+    <string name="ai_custom">Custom Prompt</string>
+    <string name="ai_replace">Replace</string>
+    <string name="ai_insert_below">Insert Below</string>
+    <string name="ai_copy">Copy</string>
+    <string name="ai_generating">Generating response…</string>
+    <string name="ai_settings">AI Assistant Configuration</string>
+    <string name="ai_endpoint">API Endpoint URL</string>
+    <string name="ai_api_key">API Key</string>
+    <string name="ai_model">Model Name</string>
+    <string name="ai_key_hint">Enter your API key</string>
+
+    <!-- Menu Modes -->
+    <string name="menu_complexity">Menu Complexity</string>
+    <string name="menu_basic_mode">Switch to Basic Mode</string>
+    <string name="menu_advanced_mode">Switch to Advanced Mode</string>
+    <string name="preview_label">Preview</string>
+    <string name="edit_label">Edit</string>
+</resources>

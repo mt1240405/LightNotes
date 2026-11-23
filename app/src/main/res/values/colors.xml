@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand / Accent: ColorOS signature amber -->
+    <color name="brand_amber">#FFB200</color>
+    <color name="brand_amber_dark">#E6A000</color>
+    <color name="brand_amber_dim">#1FFFB200</color>
+    <color name="brand_amber_ripple">#33FFB200</color>
+    <color name="brand_amber_badge">#FFB200</color>
+
+    <!-- Material 3 + ColorOS Warm Light Theme Palette -->
+    <color name="bg_canvas">#F6F7F9</color>
+    <color name="bg_main">#F6F7F9</color>
+    <color name="bg_surface">#FFFFFF</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="card_border">#EAECEF</color>
+    <color name="search_fill">#F0F1F5</color>
+    <color name="divider">#ECEEF2</color>
+
+    <color name="text_primary">#1A1B1E</color>
+    <color name="text_secondary">#636773</color>
+    <color name="text_hint">#9EA3AE</color>
+
+    <color name="toolbar_bg">#F6F7F9</color>
+    <color name="toolbar_border">#EAECEF</color>
+
+    <color name="fab_bg">#FFB200</color>
+    <color name="fab_icon">#1A1B1E</color>
+
+    <color name="tag_bg">#F0F1F5</color>
+    <color name="tag_text">#555966</color>
+
+    <!-- Circular Amber Checklist badge -->
+    <color name="badge_checklist_bg">#EEF0F4</color>
+    <color name="badge_checklist_text">#4A4E59</color>
+    <color name="badge_checklist_done_bg">#FFF3D6</color>
+    <color name="badge_checklist_done_text">#C47D00</color>
+
+    <!-- Danger / Trash Red -->
+    <color name="color_trash_red">#FF453A</color>
+
+    <!-- Highlight Swatch Colors -->
+    <color name="highlight_amber">#FFB200</color>
+    <color name="highlight_coral">#FF453A</color>
+    <color name="highlight_blue">#0A84FF</color>
+    <color name="highlight_green">#30D158</color>
+    <color name="highlight_gray">#8E8E93</color>
+
+    <!-- Section Header text -->
+    <color name="section_header_text">#8A8E99</color>
+
+    <!-- AI Accent -->
+    <color name="ai_accent">#7C4DFF</color>
+    <color name="ai_accent_dim">#1A7C4DFF</color>
+</resources>

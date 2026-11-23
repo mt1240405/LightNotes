@@ -1,0 +1,29 @@
+<resources>
+    <!-- Dark Application Theme: Pure OLED Dark + M3 Expressive -->
+    <style name="Theme.LightNotes" parent="Theme.Material3Expressive.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand_amber</item>
+        <item name="colorOnPrimary">#000000</item>
+        
+        <item name="colorSurface">#000000</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorSurfaceContainer">#141416</item>
+        <item name="colorSurfaceContainerHigh">#1C1C1E</item>
+        <item name="colorOutlineVariant">#2C2C2E</item>
+
+        <item name="android:colorBackground">#000000</item>
+        <item name="android:windowBackground">#000000</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorLink">@color/brand_amber</item>
+        
+        <!-- Outlined M3 CardView Style -->
+        <item name="materialCardViewStyle">@style/Widget.LightNotes.CardView</item>
+
+        <!-- M3 BottomSheetDialog Style -->
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.LightNotes.BottomSheetDialog</item>
+    </style>
+</resources>

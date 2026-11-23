@@ -1,0 +1,761 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/editorRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_main"
+    android:fitsSystemWindows="false">
+
+    <!-- Top Action Bar: Material 3 Expressive Toolbar -->
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/editorToolbar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:minHeight="?attr/actionBarSize"
+        android:background="?attr/colorSurface"
+        app:contentInsetStart="12dp"
+        app:contentInsetEnd="12dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="end|center_vertical"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btnUndo"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:alpha="0.35"
+                android:enabled="false"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Undo"
+                android:src="@drawable/ic_undo"
+                app:tint="@color/text_primary" />
+
+            <ImageButton
+                android:id="@+id/btnRedo"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_marginStart="2dp"
+                android:alpha="0.35"
+                android:enabled="false"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Redo"
+                android:src="@drawable/ic_redo"
+                app:tint="@color/text_primary" />
+
+            <!-- Clean M3 TextButton for Toggle Mode (Preview vs Edit) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnToggleMode"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:minHeight="48dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:text="@string/preview_label"
+                android:textColor="@color/brand_amber"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-medium"
+                app:icon="@drawable/ic_eye"
+                app:iconTint="@color/brand_amber"
+                app:iconSize="18dp"
+                app:iconGravity="textStart"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                app:cornerRadius="8dp" />
+
+            <!-- Share Button (Visible in Reading / Preview Mode) -->
+            <ImageButton
+                android:id="@+id/btnShare"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Share Note"
+                android:src="@drawable/ic_share"
+                android:visibility="gone"
+                app:tint="@color/text_primary" />
+
+            <!-- NOTE: Duplicate pin button removed from top bar. Only ivInlinePin exists in metadata row -->
+
+            <ImageButton
+                android:id="@+id/btnOverflowMenu"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_marginStart="2dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="More Options"
+                android:src="@drawable/ic_more_vert"
+                app:tint="@color/text_primary" />
+        </LinearLayout>
+    </com.google.android.material.appbar.MaterialToolbar>
+
+    <!-- Collapsible Search / Find Bar -->
+    <LinearLayout
+        android:id="@+id/layoutSearchBar"
+        android:layout_width="0dp"
+        android:layout_height="44dp"
+        android:background="@color/card_bg"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="12dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/editorToolbar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:src="@drawable/ic_search"
+            app:tint="@color/text_hint" />
+
+        <EditText
+            android:id="@+id/etSearchQuery"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:background="@null"
+            android:hint="Find in note..."
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_hint"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvSearchMatches"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="6dp"
+            android:textColor="@color/text_hint"
+            android:textSize="11sp"
+            tools:text="1/3" />
+
+        <ImageButton
+            android:id="@+id/btnSearchPrev"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Previous match"
+            android:src="@drawable/ic_undo"
+            app:tint="@color/text_primary" />
+
+        <ImageButton
+            android:id="@+id/btnSearchNext"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Next match"
+            android:src="@drawable/ic_redo"
+            app:tint="@color/text_primary" />
+
+        <ImageButton
+            android:id="@+id/btnCloseSearch"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Close search"
+            android:src="@drawable/ic_delete"
+            app:tint="@color/text_hint" />
+    </LinearLayout>
+
+    <!-- Main Content Area constrained strictly between Toolbar/SearchBar and Bottom Bar Container -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="96dp"
+        app:layout_constraintTop_toBottomOf="@id/layoutSearchBar"
+        app:layout_constraintBottom_toTopOf="@id/bottomBarContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Single-line metadata bar above Title with 12dp top padding: dd/MM/yyyy, h:mm a | 125 words | Folder Name with clickable amber pin icon -->
+            <LinearLayout
+                android:id="@+id/layoutMetadataRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="12dp"
+                android:paddingBottom="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvEditorDate"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="sans-serif"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:textColor="@color/text_hint"
+                    android:textSize="12sp"
+                    tools:text="23/11/2026, 2:00 PM | 125 words | Personal" />
+
+                <!-- The ONLY Pin icon in the editor -->
+                <ImageView
+                    android:id="@+id/ivInlinePin"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:contentDescription="Pin Note"
+                    android:src="@drawable/ic_pin_outline"
+                    app:tint="@color/text_hint" />
+            </LinearLayout>
+
+            <!-- Title -->
+            <EditText
+                android:id="@+id/etNoteTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:background="@null"
+                android:fontFamily="sans-serif-medium"
+                android:hint="@string/title_hint"
+                android:inputType="textMultiLine|textCapSentences"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <!-- Frame containing Editor EditText or Preview TextView -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:minHeight="320dp">
+
+                <EditText
+                    android:id="@+id/etNoteContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="320dp"
+                    android:background="@null"
+                    android:gravity="top|start"
+                    android:hint="@string/content_hint"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:lineSpacingMultiplier="1.45"
+                    android:scrollbars="none"
+                    android:overScrollMode="never"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint"
+                    android:textSize="15sp" />
+
+                <!-- Native Markwon Rendered TextView (Safe: NO textIsSelectable) -->
+                <TextView
+                    android:id="@+id/tvNoteRendered"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="320dp"
+                    android:lineSpacingMultiplier="1.45"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Floating Text Selection Highlight & Format Bar (Shown when text is selected) -->
+    <LinearLayout
+        android:id="@+id/layoutSelectionBar"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_preview_toggle_inactive"
+        android:elevation="6dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/bottomBarContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <View
+            android:id="@+id/swatchAmber"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_swatch_amber"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <View
+            android:id="@+id/swatchCoral"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_swatch_coral"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <View
+            android:id="@+id/swatchBlue"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_swatch_blue"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <View
+            android:id="@+id/swatchGreen"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_swatch_green"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <View
+            android:id="@+id/swatchGray"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_swatch_gray"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="20dp"
+            android:layout_marginEnd="6dp"
+            android:background="@color/divider" />
+
+        <ImageButton
+            android:id="@+id/btnSelBold"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Bold"
+            android:src="@drawable/ic_format_bold"
+            app:tint="@color/text_primary" />
+
+        <ImageButton
+            android:id="@+id/btnSelUnderline"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Underline"
+            android:src="@drawable/ic_underline"
+            app:tint="@color/text_primary" />
+
+        <ImageButton
+            android:id="@+id/btnSelStrike"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Strikethrough"
+            android:src="@drawable/ic_strikethrough"
+            app:tint="@color/text_primary" />
+
+        <ImageButton
+            android:id="@+id/btnSelCode"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Code"
+            android:src="@drawable/ic_format_code"
+            app:tint="@color/text_primary" />
+    </LinearLayout>
+
+    <!-- Two-State Bottom Container -->
+    <LinearLayout
+        android:id="@+id/bottomBarContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- State A: Floating Centered 4-Icon Action Bar (Keyboard Closed) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/layoutFloatingToolbar"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="2dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp">
+
+                <!-- 1. AI Assist -->
+                <LinearLayout
+                    android:id="@+id/btnAiAssistFloating"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="10dp">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_ai_sparkle" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="AI Assist"
+                        android:textColor="@color/brand_amber"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="20dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="@color/divider" />
+
+                <!-- 2. Checklist -->
+                <ImageButton
+                    android:id="@+id/btnTaskFloating"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Checklist"
+                    android:src="@drawable/ic_format_task"
+                    app:tint="@color/text_primary" />
+
+                <!-- 3. Voice Note -->
+                <ImageButton
+                    android:id="@+id/btnVoiceFloating"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Voice Note"
+                    android:src="@drawable/ic_mic"
+                    app:tint="@color/text_primary" />
+
+                <!-- 4. Quick Insert (+) -->
+                <ImageButton
+                    android:id="@+id/btnInsertFloating"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Quick Insert"
+                    android:src="@drawable/ic_add"
+                    app:tint="@color/brand_amber" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- State B: Docked Flat Action Bar & Expandable Formatting Row (Keyboard Open) -->
+        <LinearLayout
+            android:id="@+id/layoutDockedToolbarContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="?attr/colorSurfaceContainer"
+            android:visibility="gone">
+
+            <!-- Expandable Formatting Sub-Row (Toggled via Aa) -->
+            <HorizontalScrollView
+                android:id="@+id/layoutFormattingRow"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:background="?attr/colorSurface"
+                android:scrollbars="none"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <!-- Headings -->
+                    <ImageButton
+                        android:id="@+id/fmtHeading"
+                        android:layout_width="@dimen/format_btn_size"
+                        android:layout_height="@dimen/format_btn_size"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Heading"
+                        android:src="@drawable/ic_format_heading"
+                        app:tint="@color/text_primary" />
+
+                    <!-- Bold -->
+                    <ImageButton
+                        android:id="@+id/fmtBold"
+                        android:layout_width="@dimen/format_btn_size"
+                        android:layout_height="@dimen/format_btn_size"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Bold"
+                        android:src="@drawable/ic_format_bold"
+                        app:tint="@color/text_primary" />
+
+                    <!-- Italic -->
+                    <ImageButton
+                        android:id="@+id/fmtItalic"
+                        android:layout_width="@dimen/format_btn_size"
+                        android:layout_height="@dimen/format_btn_size"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Italic"
+                        android:src="@drawable/ic_format_italic"
+                        app:tint="@color/text_primary" />
+
+                    <!-- Strikethrough -->
+                    <ImageButton
+                        android:id="@+id/fmtStrikethrough"
+                        android:layout_width="@dimen/format_btn_size"
+                        android:layout_height="@dimen/format_btn_size"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Strikethrough"
+                        android:src="@drawable/ic_strikethrough"
+                        app:tint="@color/text_primary" />
+
+                    <!-- Bullet List -->
+                    <ImageButton
+                        android:id="@+id/fmtList"
+                        android:layout_width="@dimen/format_btn_size"
+                        android:layout_height="@dimen/format_btn_size"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Bullet List"
+                        android:src="@drawable/ic_format_list"
+                        app:tint="@color/text_primary" />
+
+                    <!-- Numbered List -->
+                    <ImageButton
+                        android:id="@+id/fmtNumberedList"
+                        android:layout_width="@dimen/format_btn_size"
+                        android:layout_height="@dimen/format_btn_size"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Numbered List"
+                        android:src="@drawable/ic_format_numbered_list"
+                        app:tint="@color/text_primary" />
+
+                    <!-- Task / Checkbox -->
+                    <ImageButton
+                        android:id="@+id/fmtTask"
+                        android:layout_width="@dimen/format_btn_size"
+                        android:layout_height="@dimen/format_btn_size"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Task Checkbox"
+                        android:src="@drawable/ic_format_task"
+                        app:tint="@color/text_primary" />
+
+                    <!-- Quote -->
+                    <ImageButton
+                        android:id="@+id/fmtQuote"
+                        android:layout_width="@dimen/format_btn_size"
+                        android:layout_height="@dimen/format_btn_size"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Quote"
+                        android:src="@drawable/ic_format_quote"
+                        app:tint="@color/text_primary" />
+
+                    <!-- Link -->
+                    <ImageButton
+                        android:id="@+id/fmtLink"
+                        android:layout_width="@dimen/format_btn_size"
+                        android:layout_height="@dimen/format_btn_size"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Link"
+                        android:src="@drawable/ic_link"
+                        app:tint="@color/text_primary" />
+
+                    <!-- Divider -->
+                    <ImageButton
+                        android:id="@+id/fmtDivider"
+                        android:layout_width="@dimen/format_btn_size"
+                        android:layout_height="@dimen/format_btn_size"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Horizontal Divider"
+                        android:src="@drawable/ic_format_divider"
+                        app:tint="@color/text_primary" />
+
+                    <!-- Advanced Formatting Sub-Row (Visible only in Advanced Mode) -->
+                    <LinearLayout
+                        android:id="@+id/layoutAdvancedFormatting"
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="20dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="6dp"
+                            android:background="@color/divider" />
+
+                        <ImageButton
+                            android:id="@+id/fmtTable"
+                            android:layout_width="@dimen/format_btn_size"
+                            android:layout_height="@dimen/format_btn_size"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Table Builder"
+                            android:src="@drawable/ic_table"
+                            app:tint="@color/brand_amber" />
+
+                        <ImageButton
+                            android:id="@+id/fmtMathStudio"
+                            android:layout_width="@dimen/format_btn_size"
+                            android:layout_height="@dimen/format_btn_size"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Math Formula Studio"
+                            android:src="@drawable/ic_format_math"
+                            app:tint="@color/brand_amber" />
+
+                        <ImageButton
+                            android:id="@+id/fmtCalloutsCode"
+                            android:layout_width="@dimen/format_btn_size"
+                            android:layout_height="@dimen/format_btn_size"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Callouts and Code Blocks"
+                            android:src="@drawable/ic_format_code"
+                            app:tint="@color/brand_amber" />
+
+                        <ImageButton
+                            android:id="@+id/fmtMermaid"
+                            android:layout_width="@dimen/format_btn_size"
+                            android:layout_height="@dimen/format_btn_size"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="Mermaid Diagram"
+                            android:src="@drawable/ic_ai_sparkle"
+                            app:tint="@color/brand_amber" />
+                    </LinearLayout>
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="?attr/colorOutlineVariant" />
+
+            <!-- Slim Docked Action Bar: AI Assist, /, Checklist, Aa, Voice Note, + -->
+            <LinearLayout
+                android:id="@+id/layoutDockedToolbar"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp">
+
+                <!-- 1. AI Assist -->
+                <ImageButton
+                    android:id="@+id/btnAiAssistDocked"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="AI Assist"
+                    android:src="@drawable/ic_ai_sparkle"
+                    app:tint="@color/brand_amber" />
+
+                <!-- 2. Slash Command (/) -->
+                <ImageButton
+                    android:id="@+id/btnSlashCommand"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Slash Commands"
+                    android:src="@drawable/ic_slash"
+                    app:tint="@color/text_primary" />
+
+                <!-- 3. Checklist -->
+                <ImageButton
+                    android:id="@+id/btnTaskDocked"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Checklist"
+                    android:src="@drawable/ic_format_task"
+                    app:tint="@color/text_primary" />
+
+                <!-- 4. Aa Formatting Toggle -->
+                <ImageButton
+                    android:id="@+id/btnFormattingAa"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Formatting Options"
+                    android:src="@drawable/ic_text_format"
+                    app:tint="@color/text_primary" />
+
+                <!-- 5. Voice Note -->
+                <ImageButton
+                    android:id="@+id/btnVoiceDocked"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Voice Note"
+                    android:src="@drawable/ic_mic"
+                    app:tint="@color/text_primary" />
+
+                <!-- 6. Quick Insert (+) -->
+                <ImageButton
+                    android:id="@+id/btnInsertDocked"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Quick Insert"
+                    android:src="@drawable/ic_add"
+                    app:tint="@color/brand_amber" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

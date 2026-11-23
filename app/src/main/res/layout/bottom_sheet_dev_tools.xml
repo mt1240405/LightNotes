@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/card_bg"
+    android:padding="16dp">
+
+    <!-- Drag Handle -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="12dp"
+        android:background="@color/divider" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Developer Workspace &amp; Scratchpad"
+        android:textColor="@color/brand_amber"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        android:layout_marginBottom="12dp" />
+
+    <!-- 4 Tabs -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="34dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/tabJsonXml"
+                style="@style/Widget.LightNotes.TabButton"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="JSON / XML"
+                android:textColor="@color/brand_amber"
+                android:background="@drawable/bg_preview_toggle_active" />
+
+            <Button
+                android:id="@+id/tabRegex"
+                style="@style/Widget.LightNotes.TabButton"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="6dp"
+                android:text="Regex Tester"
+                android:textColor="@color/text_secondary"
+                android:background="@drawable/bg_preview_toggle_inactive" />
+
+            <Button
+                android:id="@+id/tabCodec"
+                style="@style/Widget.LightNotes.TabButton"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="6dp"
+                android:text="Base64 / Epoch"
+                android:textColor="@color/text_secondary"
+                android:background="@drawable/bg_preview_toggle_inactive" />
+
+            <Button
+                android:id="@+id/tabDiff"
+                style="@style/Widget.LightNotes.TabButton"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginStart="6dp"
+                android:text="Text Diff"
+                android:textColor="@color/text_secondary"
+                android:background="@drawable/bg_preview_toggle_inactive" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Pane 1: JSON / XML -->
+    <LinearLayout
+        android:id="@+id/paneJsonXml"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="12dp">
+
+        <EditText
+            android:id="@+id/etJsonInput"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:gravity="top|start"
+            android:hint="Paste raw JSON or XML here..."
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:textColor="@color/text_primary"
+            android:background="@drawable/bg_preview_toggle_inactive"
+            android:padding="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/btnFormatJson"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:text="Format (2sp)"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btnMinifyJson"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:text="Minify"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btnInsertJson"
+                android:layout_width="0dp"
+                android:layout_height="38dp"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:text="Insert in Note"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Pane 2: Regex Tester -->
+    <LinearLayout
+        android:id="@+id/paneRegex"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="12dp"
+        android:visibility="gone">
+
+        <EditText
+            android:id="@+id/etRegexPattern"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Regex Pattern (e.g. \\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b)"
+            android:fontFamily="monospace"
+            android:textSize="13sp"
+            android:textColor="@color/text_primary"
+            android:background="@drawable/bg_preview_toggle_inactive"
+            android:padding="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp">
+
+            <CheckBox
+                android:id="@+id/cbRegexIgnoreCase"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ignore Case"
+                android:checked="true"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <CheckBox
+                android:id="@+id/cbRegexMultiline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="Multiline"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/etRegexTestString"
+            android:layout_width="match_parent"
+            android:layout_height="90dp"
+            android:layout_marginTop="6dp"
+            android:gravity="top|start"
+            android:hint="Sample input text to match..."
+            android:textSize="12sp"
+            android:textColor="@color/text_primary"
+            android:background="@drawable/bg_preview_toggle_inactive"
+            android:padding="8dp" />
+
+        <TextView
+            android:id="@+id/tvRegexResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Matches: 0"
+            android:textColor="@color/brand_amber"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Pane 3: Codec & Timestamp -->
+    <LinearLayout
+        android:id="@+id/paneCodec"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="12dp"
+        android:visibility="gone">
+
+        <EditText
+            android:id="@+id/etCodecInput"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:gravity="top|start"
+            android:hint="Input text or timestamp/epoch..."
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:textColor="@color/text_primary"
+            android:background="@drawable/bg_preview_toggle_inactive"
+            android:padding="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp">
+
+            <Button
+                android:id="@+id/btnBase64Encode"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="B64 Enc"
+                android:textSize="11sp" />
+
+            <Button
+                android:id="@+id/btnBase64Decode"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:text="B64 Dec"
+                android:textSize="11sp" />
+
+            <Button
+                android:id="@+id/btnUrlEncode"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:text="URL Enc"
+                android:textSize="11sp" />
+
+            <Button
+                android:id="@+id/btnEpochConvert"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:text="Epoch"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/etCodecOutput"
+            android:layout_width="match_parent"
+            android:layout_height="70dp"
+            android:layout_marginTop="6dp"
+            android:gravity="top|start"
+            android:hint="Output appears here..."
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:textColor="@color/text_primary"
+            android:background="@drawable/bg_preview_toggle_inactive"
+            android:padding="8dp" />
+    </LinearLayout>
+
+    <!-- Pane 4: Text Diff -->
+    <LinearLayout
+        android:id="@+id/paneDiff"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="12dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/etDiffOriginal"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="top|start"
+                android:hint="Original Text / Note..."
+                android:textSize="11sp"
+                android:background="@drawable/bg_preview_toggle_inactive"
+                android:padding="6dp" />
+
+            <EditText
+                android:id="@+id/etDiffModified"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:gravity="top|start"
+                android:hint="Modified / Clipboard..."
+                android:textSize="11sp"
+                android:background="@drawable/bg_preview_toggle_inactive"
+                android:padding="6dp" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnRunDiff"
+            android:layout_width="match_parent"
+            android:layout_height="38dp"
+            android:layout_marginTop="6dp"
+            android:text="Run Myers Line Diff"
+            android:textSize="12sp" />
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_preview_toggle_inactive"
+            android:padding="6dp">
+
+            <TextView
+                android:id="@+id/tvDiffResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:textSize="11sp"
+                android:textColor="@color/text_primary" />
+        </ScrollView>
+    </LinearLayout>
+
+</LinearLayout>

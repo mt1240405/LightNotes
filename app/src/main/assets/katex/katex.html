@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="file:///android_asset/katex/katex.min.css">
+    <script src="file:///android_asset/katex/katex.min.js"></script>
+    <style>
+        body { margin: 0; padding: 6px; background-color: transparent; }
+        .katex-display { margin: 0 !important; }
+    </style>
+</head>
+<body>
+    <div id="math"></div>
+    <script>
+        function renderMath(latex, isBlock) {
+            try {
+                katex.render(latex, document.getElementById('math'), {
+                    displayMode: isBlock,
+                    throwOnError: false
+                });
+            } catch (e) {
+                document.getElementById('math').innerText = latex;
+            }
+        }
+    </script>
+</body>
+</html>
