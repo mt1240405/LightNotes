@@ -39,11 +39,11 @@
         android:layout_marginTop="16dp"
         android:orientation="vertical">
 
-        <!-- 1. Text -->
+        <!-- 1. Plain Text -->
         <LinearLayout
             android:id="@+id/btnShareText"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="56dp"
             android:background="?attr/selectableItemBackground"
             android:clickable="true"
             android:focusable="true"
@@ -55,7 +55,7 @@
             <ImageView
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-                android:src="@drawable/ic_format_heading"
+                android:src="@drawable/ic_text_format"
                 app:tint="@color/brand_amber" />
 
             <LinearLayout
@@ -69,14 +69,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
-                    android:text="Text"
+                    android:text="Share as Plain Text"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Plain text copy of title and content"
+                    android:text="Clean text copy with Markdown syntax stripped"
                     android:textColor="@color/text_hint"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -87,59 +87,11 @@
             android:layout_height="1dp"
             android:background="@color/divider" />
 
-        <!-- 2. Image / Picture -->
-        <LinearLayout
-            android:id="@+id/btnShareImage"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_image"
-                app:tint="@color/brand_amber" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="Picture / Card Image"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Generate styled ColorOS note image (PNG)"
-                    android:textColor="@color/text_hint"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/divider" />
-
-        <!-- 3. Markdown -->
+        <!-- 2. Markdown Document -->
         <LinearLayout
             android:id="@+id/btnShareMarkdown"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="56dp"
             android:background="?attr/selectableItemBackground"
             android:clickable="true"
             android:focusable="true"
@@ -165,62 +117,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
-                    android:text="Markdown Document (.md)"
+                    android:text="Share as Markdown (.md)"
                     android:textColor="@color/text_primary"
                     android:textSize="14sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Standard markdown file for Obsidian/GitHub"
-                    android:textColor="@color/text_hint"
-                    android:textSize="11sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="@color/divider" />
-
-        <!-- 4. PDF -->
-        <LinearLayout
-            android:id="@+id/btnSharePdf"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp">
-
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_link"
-                app:tint="@color/brand_amber" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="PDF Document"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Formatted print document with KaTeX and tables"
+                    android:text="Raw Markdown format for Obsidian, GitHub, or code editors"
                     android:textColor="@color/text_hint"
                     android:textSize="11sp" />
             </LinearLayout>

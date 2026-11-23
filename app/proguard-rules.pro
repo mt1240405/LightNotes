@@ -1,12 +1,10 @@
-# Add project specific ProGuard rules here.
+# Project specific ProGuard rules for LightNotes Lite
 -keepattributes *Annotation*
 -keepclassmembers class * extends androidx.room.RoomDatabase {
     <init>(...);
 }
 
-# JLatexMath & Markwon rules
--keep class ru.noties.jlatexmath.** { *; }
--dontwarn ru.noties.jlatexmath.**
+# Markwon core & extension rules
 -keep class io.noties.markwon.** { *; }
 -dontwarn io.noties.markwon.**
 
@@ -20,10 +18,5 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
-# Prism4j
--keep class io.noties.prism4j.** { *; }
--dontwarn io.noties.prism4j.**
-
-# ZXing
--keep class com.google.zxing.** { *; }
--dontwarn com.google.zxing.**
+# Coroutines
+-dontwarn kotlinx.coroutines.**

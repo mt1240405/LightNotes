@@ -13,8 +13,8 @@ android {
         applicationId = "com.lightnotes.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "2.0.0"
+        versionCode = 3
+        versionName = "1.0.0"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -29,6 +29,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
         debug {
             isDebuggable = true
@@ -80,20 +81,11 @@ dependencies {
     // Jetpack DataStore Preferences
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // WorkManager
-    implementation("androidx.work:work-runtime-ktx:2.9.1")
-
     // Biometric
     implementation("androidx.biometric:biometric:1.1.0")
 
-    // DocumentFile for SAF folder mirroring & auto-backup
+    // DocumentFile for SAF backup / restore
     implementation("androidx.documentfile:documentfile:1.0.1")
-
-    // Coil Image Loading
-    implementation("io.coil-kt:coil:2.6.0")
-
-    // ZXing for QR Code generation and scanning
-    implementation("com.google.zxing:core:3.5.3")
 
     // Room
     val roomVersion = "2.6.1"
@@ -101,20 +93,13 @@ dependencies {
     implementation("androidx.room:room-ktx:$roomVersion")
     kapt("androidx.room:room-compiler:$roomVersion")
 
-    // Markwon for pure JVM Markdown & LaTeX rendering
+    // Core Markwon (lightweight native markdown rendering)
     val markwonVersion = "4.6.2"
     implementation("io.noties.markwon:core:$markwonVersion")
     implementation("io.noties.markwon:ext-tables:$markwonVersion")
     implementation("io.noties.markwon:ext-strikethrough:$markwonVersion")
     implementation("io.noties.markwon:ext-tasklist:$markwonVersion")
-    implementation("io.noties.markwon:ext-latex:$markwonVersion")
-    implementation("io.noties.markwon:inline-parser:$markwonVersion")
-    implementation("io.noties.markwon:html:$markwonVersion")
     implementation("io.noties.markwon:linkify:$markwonVersion")
-    implementation("io.noties.markwon:image-coil:$markwonVersion")
-    implementation("io.noties.markwon:syntax-highlight:$markwonVersion")
-    implementation("io.noties:prism4j:2.0.0")
-    implementation("ru.noties:jlatexmath-android:0.2.0")
 
     // Unit & Regression Tests (Robolectric + Espresso)
     testImplementation("junit:junit:4.13.2")

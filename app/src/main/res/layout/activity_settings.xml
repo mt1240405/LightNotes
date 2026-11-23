@@ -7,20 +7,19 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/bg_main"
-    android:fitsSystemWindows="false">
+    android:fitsSystemWindows="true">
 
-    <androidx.appcompat.widget.Toolbar
+    <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/settingsToolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="?attr/actionBarSize"
-        android:background="@color/bg_main"
+        android:background="?attr/colorSurface"
         app:navigationIcon="@drawable/ic_arrow_back"
         app:title="@string/settings_title"
         app:titleTextColor="@color/text_primary" />
 
     <ScrollView
-        android:id="@+id/settingsScrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -30,11 +29,11 @@
             android:orientation="vertical"
             android:padding="20dp">
 
-            <!-- Menu Complexity Section -->
+            <!-- SECTION: APPEARANCE -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/menu_complexity"
+                android:text="Appearance"
                 android:textColor="@color/brand_amber"
                 android:textSize="12sp"
                 android:textStyle="bold"
@@ -42,17 +41,17 @@
                 android:letterSpacing="0.05" />
 
             <LinearLayout
-                android:id="@+id/btnToggleAdvancedMode"
+                android:id="@+id/btnThemeMode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp">
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -63,456 +62,133 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Advanced Power-User Menus"
+                        android:text="Theme"
                         android:textColor="@color/text_primary"
                         android:textSize="15sp"
                         android:fontFamily="sans-serif-medium" />
 
                     <TextView
-                        android:id="@+id/tvAdvancedModeSummary"
+                        android:id="@+id/tvThemeSummary"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Reveals tables, inline/display math, strikethrough, and links in formatting bar"
+                        android:text="System Default"
                         android:textColor="@color/text_hint"
                         android:textSize="12sp" />
                 </LinearLayout>
-
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switchAdvancedMode"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:clickable="false"
-                    android:focusable="false" />
-            </LinearLayout>
-
-            <!-- Material You Dynamic Colors -->
-            <LinearLayout
-                android:id="@+id/btnToggleDynamicColors"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Material You Dynamic Colors"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:fontFamily="sans-serif-medium" />
-
-                    <TextView
-                        android:id="@+id/tvDynamicColorsSummary"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Active: Off (Default Realme Amber #FFB200)"
-                        android:textColor="@color/text_hint"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switchDynamicColors"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:clickable="false"
-                    android:focusable="false" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/btnToggleMathEngine"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Offline KaTeX Math Engine"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:fontFamily="sans-serif-medium" />
-
-                    <TextView
-                        android:id="@+id/tvMathEngineSummary"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Active: Native JLatexMath (Fast, lightweight)"
-                        android:textColor="@color/text_hint"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switchMathEngine"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:clickable="false"
-                    android:focusable="false" />
-            </LinearLayout>
-
-            <!-- Mermaid Diagrams -->
-            <LinearLayout
-                android:id="@+id/btnToggleMermaid"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Mermaid Diagram Rendering"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:fontFamily="sans-serif-medium" />
-
-                    <TextView
-                        android:id="@+id/tvMermaidSummary"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Lazy rendering for ```mermaid code blocks"
-                        android:textColor="@color/text_hint"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switchMermaid"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:clickable="false"
-                    android:focusable="false" />
-            </LinearLayout>
-
-            <!-- Editor Font Size -->
-            <LinearLayout
-                android:id="@+id/btnFontSize"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:orientation="vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Editor Font Size"
-                    android:textColor="@color/text_primary"
-                    android:textSize="15sp"
-                    android:fontFamily="sans-serif-medium" />
-
-                <TextView
-                    android:id="@+id/tvFontSizeSummary"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="15 sp (Default)"
-                    android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <!-- App Biometric Lock -->
-            <LinearLayout
-                android:id="@+id/btnToggleBiometric"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Biometric Protection"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:fontFamily="sans-serif-medium" />
-
-                    <TextView
-                        android:id="@+id/tvBiometricSummary"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Fingerprint &amp; device credentials"
-                        android:textColor="@color/text_hint"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switchBiometric"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:clickable="false"
-                    android:focusable="false" />
-            </LinearLayout>
-
-            <!-- Auto Backup -->
-            <LinearLayout
-                android:id="@+id/btnAutoBackup"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:orientation="vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Scheduled Auto-Backup"
-                    android:textColor="@color/text_primary"
-                    android:textSize="15sp"
-                    android:fontFamily="sans-serif-medium" />
-
-                <TextView
-                    android:id="@+id/tvAutoBackupSummary"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Disabled (Select SAF folder to enable)"
-                    android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
             </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:layout_marginTop="14dp"
-                android:layout_marginBottom="18dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp"
                 android:background="@color/divider" />
 
-            <!-- AI Assistant Settings Section -->
+            <!-- SECTION: SECURITY -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/ai_settings"
+                android:text="Security"
                 android:textColor="@color/brand_amber"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textAllCaps="true"
                 android:letterSpacing="0.05" />
 
-            <!-- AI Endpoint -->
             <LinearLayout
-                android:id="@+id/btnAiEndpoint"
+                android:id="@+id/btnToggleBiometricLock"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
-                android:orientation="vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp">
 
-                <TextView
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Biometric App Lock"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Require fingerprint or face recognition on app launch"
+                        android:textColor="@color/text_hint"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switchBiometricLock"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/ai_endpoint"
-                    android:textColor="@color/text_primary"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:id="@+id/tvAiEndpointSummary"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="https://api.openai.com/v1/chat/completions"
-                    android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <!-- AI API Key -->
-            <LinearLayout
-                android:id="@+id/btnAiApiKey"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:orientation="vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/ai_api_key"
-                    android:textColor="@color/text_primary"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:id="@+id/tvAiApiKeySummary"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Not configured"
-                    android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <!-- AI Model -->
-            <LinearLayout
-                android:id="@+id/btnAiModel"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:orientation="vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/ai_model"
-                    android:textColor="@color/text_primary"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:id="@+id/tvAiModelSummary"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="gpt-4o-mini"
-                    android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
+                    android:clickable="false"
+                    android:focusable="false" />
             </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:layout_marginTop="14dp"
-                android:layout_marginBottom="18dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp"
                 android:background="@color/divider" />
 
-            <!-- Backup & Restore Header -->
+            <!-- SECTION: DATA & BACKUP -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/backup_restore"
+                android:text="Data &amp; Backup (Local-First)"
                 android:textColor="@color/brand_amber"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textAllCaps="true"
                 android:letterSpacing="0.05" />
 
-            <!-- Import HeyTap -->
-            <LinearLayout
-                android:id="@+id/btnImportHeyTap"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:orientation="vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/import_heytap"
-                    android:textColor="@color/text_primary"
-                    android:textSize="15sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Import from heytap-notes-backup.json with HTML to Markdown"
-                    android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <!-- Export JSON -->
+            <!-- 1. Export JSON -->
             <LinearLayout
                 android:id="@+id/btnExportJson"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true"
                 android:focusable="true"
                 android:orientation="vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/export_json"
+                    android:text="Export JSON Backup"
                     android:textColor="@color/text_primary"
-                    android:textSize="15sp" />
+                    android:textSize="15sp"
+                    android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Export all notes and folders as plain JSON"
+                    android:text="Save all notes into portable lightnotes-backup v1 format"
                     android:textColor="@color/text_hint"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Import JSON -->
+            <!-- 2. Restore JSON -->
             <LinearLayout
                 android:id="@+id/btnImportJson"
                 android:layout_width="match_parent"
@@ -521,26 +197,27 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:orientation="vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/import_json"
+                    android:text="Restore JSON Backup"
                     android:textColor="@color/text_primary"
-                    android:textSize="15sp" />
+                    android:textSize="15sp"
+                    android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Restore notes and folders from a JSON backup"
+                    android:text="Non-destructive merge of notes from a JSON backup"
                     android:textColor="@color/text_hint"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Export Encrypted -->
+            <!-- 3. Export Encrypted (.enotes) -->
             <LinearLayout
                 android:id="@+id/btnExportEncrypted"
                 android:layout_width="match_parent"
@@ -549,26 +226,27 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:orientation="vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/export_encrypted"
+                    android:text="Export Encrypted Backup (.enotes)"
                     android:textColor="@color/text_primary"
-                    android:textSize="15sp" />
+                    android:textSize="15sp"
+                    android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="AES-256-GCM encrypted backup with PBKDF2 passphrase"
+                    android:text="Passphrase-protected AES-256-GCM encrypted archive"
                     android:textColor="@color/text_hint"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Import Encrypted -->
+            <!-- 4. Restore Encrypted (.enotes) -->
             <LinearLayout
                 android:id="@+id/btnImportEncrypted"
                 android:layout_width="match_parent"
@@ -577,61 +255,100 @@
                 android:clickable="true"
                 android:focusable="true"
                 android:orientation="vertical"
-                android:paddingTop="8dp"
-                android:paddingBottom="8dp">
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/import_encrypted"
+                    android:text="Restore Encrypted Backup (.enotes)"
                     android:textColor="@color/text_primary"
-                    android:textSize="15sp" />
+                    android:textSize="15sp"
+                    android:fontFamily="sans-serif-medium" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="Decrypt and restore from .enotes file using your password"
+                    android:text="Decrypt and merge notes from a .enotes file"
                     android:textColor="@color/text_hint"
                     android:textSize="12sp" />
             </LinearLayout>
 
-            <!-- Engine Info -->
+            <!-- 5. Import HeyTap Backup -->
+            <LinearLayout
+                android:id="@+id/btnImportHeyTap"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:orientation="vertical"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Import Realme / HeyTap Backup"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:fontFamily="sans-serif-medium" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Migrate notes from ColorOS/Realme notes backup file"
+                    android:textColor="@color/text_hint"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp"
+                android:background="@color/divider" />
+
+            <!-- SECTION: ABOUT -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="Engine &amp; Architecture"
+                android:text="About"
                 android:textColor="@color/brand_amber"
                 android:textSize="12sp"
                 android:textStyle="bold"
                 android:textAllCaps="true"
                 android:letterSpacing="0.05" />
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Markdown &amp; Math Rendering: Markwon + JLaTeXMath (pure JVM, zero WebView overhead)"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
+                android:orientation="vertical"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Storage: Room SQLite with full offline persistence"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/tvAppVersion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="LightNotes Lite v1.0.0 (v0.7-beta)"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:fontFamily="sans-serif-medium" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Compatibility: Universal Android 8.0+ (API 26–35), Zero OEM locks"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Local-first now. Sync-ready by design. Cloud when needed."
+                    android:textColor="@color/text_hint"
+                    android:textSize="12sp" />
+            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>
+
 </LinearLayout>

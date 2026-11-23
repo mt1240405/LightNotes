@@ -1,14 +1,19 @@
 package com.lightnotes.app.backup
 
-import com.lightnotes.app.data.FolderEntity
-import com.lightnotes.app.data.NoteEntity
+import com.lightnotes.app.core.model.Folder
+import com.lightnotes.app.core.model.Note
+import com.lightnotes.app.core.model.SyncState
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.InputStream
 import java.io.OutputStream
-import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import java.util.UUID
 import javax.crypto.Cipher
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
@@ -23,36 +28,43 @@ object BackupService {
     private const val KEY_LEN = 256
     private const val ITERATIONS = 10000
 
-    fun exportToJson(notes: List<NoteEntity>, folders: List<FolderEntity>): String {
+    fun exportToJson(notes: List<Note>, folders: List<Folder>): String {
         val root = JSONObject()
+        root.put("format", "lightnotes-backup")
         root.put("version", 1)
-        root.put("exportedAt", System.currentTimeMillis())
+
+        val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+        root.put("exportedAt", isoFormat.format(Date()))
+
+        // Map folderGlobalId to folder name
+        val folderMap = folders.associateBy({ it.globalId }, { it.name })
 
         val notesArray = JSONArray()
         for (note in notes) {
             val obj = JSONObject()
-            obj.put("uuid", note.uuid)
+            obj.put("id", note.globalId)
             obj.put("title", note.title)
             obj.put("content", note.content)
-            obj.put("previewText", note.previewText)
-            obj.put("folderId", note.folderId ?: JSONObject.NULL)
-            obj.put("isPinned", note.isPinned)
-            obj.put("isArchived", note.isArchived)
-            obj.put("isDeleted", note.isDeleted)
-            obj.put("createdAt", note.createdAt)
-            obj.put("updatedAt", note.updatedAt)
-            obj.put("tags", note.tags)
+            obj.put("createdAt", note.createdAtUtc)
+            obj.put("updatedAt", note.updatedAtUtc)
+            val folderName = if (note.folderGlobalId != null) folderMap[note.folderGlobalId] ?: "" else ""
+            obj.put("folder", folderName)
+            obj.put("pinned", note.isPinned)
+            obj.put("favorite", note.isFavorite)
             notesArray.put(obj)
         }
         root.put("notes", notesArray)
 
+        // Also preserve folders metadata
         val foldersArray = JSONArray()
         for (folder in folders) {
             val obj = JSONObject()
-            obj.put("id", folder.id)
+            obj.put("id", folder.globalId)
             obj.put("name", folder.name)
             obj.put("color", folder.color)
-            obj.put("createdAt", folder.createdAt)
+            obj.put("createdAt", folder.createdAtUtc)
             foldersArray.put(obj)
         }
         root.put("folders", foldersArray)
@@ -60,22 +72,33 @@ object BackupService {
         return root.toString(2)
     }
 
-    fun parseFromJson(jsonString: String): Pair<List<NoteEntity>, List<FolderEntity>> {
+    fun parseFromJson(jsonString: String): Pair<List<Note>, List<Folder>> {
         val root = JSONObject(jsonString)
-        val notes = mutableListOf<NoteEntity>()
-        val folders = mutableListOf<FolderEntity>()
+
+        val notes = mutableListOf<Note>()
+        val folders = mutableListOf<Folder>()
+        val folderNameToGlobalId = mutableMapOf<String, String>()
 
         val foldersArray = root.optJSONArray("folders")
         if (foldersArray != null) {
             for (i in 0 until foldersArray.length()) {
                 val obj = foldersArray.getJSONObject(i)
-                folders.add(
-                    FolderEntity(
-                        name = obj.getString("name"),
-                        color = obj.optString("color", "#FFB200"),
-                        createdAt = obj.optLong("createdAt", System.currentTimeMillis())
-                    )
+                val id = obj.optString("id", UUID.randomUUID().toString())
+                val name = obj.getString("name")
+                val color = obj.optString("color", "#FFB200")
+                val createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+
+                val folder = Folder(
+                    globalId = id,
+                    name = name,
+                    color = color,
+                    createdAtUtc = createdAt,
+                    updatedAtUtc = createdAt,
+                    revision = 1L,
+                    syncState = SyncState.LOCAL_ONLY
                 )
+                folders.add(folder)
+                folderNameToGlobalId[name] = id
             }
         }
 
@@ -83,20 +106,48 @@ object BackupService {
         if (notesArray != null) {
             for (i in 0 until notesArray.length()) {
                 val obj = notesArray.getJSONObject(i)
-                val folderId = if (obj.isNull("folderId")) null else obj.getLong("folderId")
+                val globalId = obj.optString("id", obj.optString("uuid", UUID.randomUUID().toString()))
+                val title = obj.optString("title", "")
+                val content = obj.optString("content", "")
+                val createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+                val updatedAt = obj.optLong("updatedAt", System.currentTimeMillis())
+                val folderName = obj.optString("folder", "")
+                val folderGlobalId = if (folderName.isNotBlank()) {
+                    folderNameToGlobalId.getOrPut(folderName) {
+                        val newFolderId = UUID.randomUUID().toString()
+                        folders.add(
+                            Folder(
+                                globalId = newFolderId,
+                                name = folderName,
+                                createdAtUtc = createdAt,
+                                updatedAtUtc = createdAt
+                            )
+                        )
+                        newFolderId
+                    }
+                } else null
+
+                val isPinned = obj.optBoolean("pinned", obj.optBoolean("isPinned", false))
+                val isFavorite = obj.optBoolean("favorite", obj.optBoolean("isFavorite", false))
+                val isArchived = obj.optBoolean("archived", obj.optBoolean("isArchived", false))
+                val isDeleted = obj.optBoolean("deleted", obj.optBoolean("isDeleted", false))
+                val deletedAtUtc = if (isDeleted) updatedAt else null
+
                 notes.add(
-                    NoteEntity(
-                        uuid = obj.optString("uuid", java.util.UUID.randomUUID().toString()),
-                        title = obj.optString("title", ""),
-                        content = obj.optString("content", ""),
-                        previewText = obj.optString("previewText", ""),
-                        folderId = folderId,
-                        isPinned = obj.optBoolean("isPinned", false),
-                        isArchived = obj.optBoolean("isArchived", false),
-                        isDeleted = obj.optBoolean("isDeleted", false),
-                        createdAt = obj.optLong("createdAt", System.currentTimeMillis()),
-                        updatedAt = obj.optLong("updatedAt", System.currentTimeMillis()),
-                        tags = obj.optString("tags", "")
+                    Note(
+                        globalId = globalId,
+                        title = title,
+                        content = content,
+                        folderGlobalId = folderGlobalId,
+                        createdAtUtc = createdAt,
+                        updatedAtUtc = updatedAt,
+                        isPinned = isPinned,
+                        isFavorite = isFavorite,
+                        isArchived = isArchived,
+                        deletedAtUtc = deletedAtUtc,
+                        schemaVersion = 1,
+                        revision = 1L,
+                        syncState = SyncState.LOCAL_ONLY
                     )
                 )
             }
@@ -106,8 +157,8 @@ object BackupService {
     }
 
     fun exportEncrypted(
-        notes: List<NoteEntity>,
-        folders: List<FolderEntity>,
+        notes: List<Note>,
+        folders: List<Folder>,
         passphrase: String,
         outputStream: OutputStream
     ) {
@@ -142,7 +193,7 @@ object BackupService {
     fun importEncrypted(
         inputStream: InputStream,
         passphrase: String
-    ): Pair<List<NoteEntity>, List<FolderEntity>> {
+    ): Pair<List<Note>, List<Folder>> {
         val allBytes = inputStream.readBytes()
         val magicBytes = ENOTES_MAGIC.toByteArray(StandardCharsets.US_ASCII)
         val headerLen = magicBytes.size + SALT_LEN + IV_LEN

@@ -6,9 +6,11 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.lightnotes.app.R
 import com.lightnotes.app.databinding.ItemFolderTabBinding
+import com.lightnotes.app.ui.viewmodel.NotesFilterType
 
 data class FolderTabItem(
-    val id: Long, // -1 for All, -2 for Pinned, -3 for Trash, >= 0 for custom folders
+    val filterType: NotesFilterType,
+    val folderGlobalId: String? = null,
     val name: String,
     val count: Int = 0
 )
@@ -63,7 +65,7 @@ class FolderTabAdapter(
             }
 
             binding.root.setOnClickListener {
-                val pos = adapterPosition
+                val pos = bindingAdapterPosition
                 if (pos != RecyclerView.NO_POSITION && pos != selectedPosition) {
                     setSelectedTab(pos)
                     onTabSelected(item)

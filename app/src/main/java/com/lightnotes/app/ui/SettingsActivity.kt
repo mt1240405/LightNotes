@@ -8,37 +8,34 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import com.lightnotes.app.ai.AiPreferences
-import com.lightnotes.app.backup.BackupService
-import com.lightnotes.app.backup.HeyTapImporter
-import com.lightnotes.app.data.AppDatabase
-import com.lightnotes.app.data.AppPreferences
+import androidx.lifecycle.repeatOnLifecycle
 import com.lightnotes.app.data.PreferencesRepository
 import com.lightnotes.app.databinding.ActivitySettingsBinding
 import com.lightnotes.app.security.BiometricHelper
-import kotlinx.coroutines.Dispatchers
+import com.lightnotes.app.ui.viewmodel.SettingsViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
-    private val database by lazy { AppDatabase.getDatabase(this) }
+    private val viewModel: SettingsViewModel by viewModels()
+    private val prefsRepo by lazy { PreferencesRepository.getInstance(this) }
 
     private var pendingPassphrase: String = ""
 
-    // Activity Result Launchers
-    private val importHeyTapLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        if (uri != null) importHeyTapFromUri(uri)
-    }
-
+    // SAF Launchers
     private val exportJsonLauncher = registerForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri: Uri? ->
@@ -63,24 +60,14 @@ class SettingsActivity : AppCompatActivity() {
         if (uri != null) importEncryptedFromUri(uri, pendingPassphrase)
     }
 
-    private val autoBackupTreeLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
+    private val importHeyTapLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
-        if (uri != null) {
-            contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            )
-            lifecycleScope.launch {
-                PreferencesRepository.getInstance(this@SettingsActivity)
-                    .setAutoBackupConfig(true, uri.toString(), "daily")
-                com.lightnotes.app.backup.AutoBackupWorker.schedule(this@SettingsActivity)
-                binding.tvAutoBackupSummary.text = "Enabled: Daily backup to ${uri.lastPathSegment}"
-            }
-        }
+        if (uri != null) importHeyTapFromUri(uri)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        HighRefreshRateHelper.applyHighRefreshRate(this)
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
@@ -88,14 +75,8 @@ class SettingsActivity : AppCompatActivity() {
 
         setupWindowInsets()
         setupToolbar()
-        setupMenuComplexity()
-        setupDynamicColorsSettings()
-        setupMathEngineSettings()
-        setupMermaidSettings()
-        setupFontSizeSettings()
+        setupThemeSettings()
         setupBiometricSettings()
-        setupAutoBackupSettings()
-        setupAiSettings()
         setupBackupActions()
     }
 
@@ -104,10 +85,7 @@ class SettingsActivity : AppCompatActivity() {
             val systemBars = insets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
-
             binding.settingsToolbar.setPadding(0, systemBars.top, 0, 0)
-            binding.settingsScrollView.setPadding(0, 0, 0, systemBars.bottom)
-
             insets
         }
     }
@@ -118,418 +96,222 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupMenuComplexity() {
-        val prefs = PreferencesRepository.getInstance(this)
+    private fun setupThemeSettings() {
         lifecycleScope.launch {
-            prefs.isAdvancedModeFlow.collect { isAdvanced ->
-                binding.switchAdvancedMode.isChecked = isAdvanced
-                AppPreferences.setAdvancedMode(this@SettingsActivity, isAdvanced)
-                updateAdvancedModeSummary(isAdvanced)
+            val mode = prefsRepo.themeModeFlow.first()
+            binding.tvThemeSummary.text = when (mode) {
+                1 -> "Light"
+                2 -> "OLED Dark"
+                else -> "System Default"
             }
         }
 
-        binding.btnToggleAdvancedMode.setOnClickListener {
-            val newState = !binding.switchAdvancedMode.isChecked
-            binding.switchAdvancedMode.isChecked = newState
-            AppPreferences.setAdvancedMode(this, newState)
+        binding.btnThemeMode.setOnClickListener {
+            val options = arrayOf("System Default", "Light", "OLED Dark")
             lifecycleScope.launch {
-                prefs.setAdvancedMode(newState)
+                val currentMode = prefsRepo.themeModeFlow.first()
+                AlertDialog.Builder(this@SettingsActivity)
+                    .setTitle("Select Theme")
+                    .setSingleChoiceItems(options, currentMode) { dialog, which ->
+                        lifecycleScope.launch {
+                            prefsRepo.setThemeMode(which)
+                            binding.tvThemeSummary.text = options[which]
+                            when (which) {
+                                1 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                                2 -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                                else -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                            }
+                        }
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
             }
-            updateAdvancedModeSummary(newState)
-        }
-    }
-
-    private fun updateAdvancedModeSummary(isAdvanced: Boolean) {
-        binding.tvAdvancedModeSummary.text = if (isAdvanced) {
-            "Active: Full controls enabled (tables, LaTeX math, strikethrough, code blocks)"
-        } else {
-            "Active: Clean ColorOS layout (checklist, bold, italic, heading, AI assistant)"
-        }
-    }
-
-    private fun setupDynamicColorsSettings() {
-        val isDynamic = AppPreferences.isDynamicColors(this)
-        binding.switchDynamicColors.isChecked = isDynamic
-        updateDynamicColorsSummary(isDynamic)
-
-        binding.btnToggleDynamicColors.setOnClickListener {
-            val newState = !binding.switchDynamicColors.isChecked
-            binding.switchDynamicColors.isChecked = newState
-            AppPreferences.setDynamicColors(this, newState)
-            if (newState) {
-                com.google.android.material.color.DynamicColors.applyToActivitiesIfAvailable(application)
-            }
-            updateDynamicColorsSummary(newState)
-            Toast.makeText(this, "Dynamic colors setting saved", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun updateDynamicColorsSummary(isDynamic: Boolean) {
-        binding.tvDynamicColorsSummary.text = if (isDynamic) {
-            "Active: System Material You Wallpaper Palette"
-        } else {
-            "Active: Off (Default Realme Amber #FFB200)"
-        }
-    }
-
-    private fun setupMathEngineSettings() {
-        val isKaTeX = AppPreferences.isKaTeXEngine(this)
-        binding.switchMathEngine.isChecked = isKaTeX
-        updateMathEngineSummary(isKaTeX)
-
-        binding.btnToggleMathEngine.setOnClickListener {
-            val newState = !binding.switchMathEngine.isChecked
-            binding.switchMathEngine.isChecked = newState
-            AppPreferences.setKaTeXEngine(this, newState)
-            updateMathEngineSummary(newState)
-        }
-    }
-
-    private fun updateMathEngineSummary(isKaTeX: Boolean) {
-        binding.tvMathEngineSummary.text = if (isKaTeX) {
-            "Active: Offline KaTeX Engine (Full LaTeX formula fidelity)"
-        } else {
-            "Active: Native JLatexMath (Fast, zero-latency rendering)"
-        }
-    }
-
-    private fun setupMermaidSettings() {
-        val prefs = PreferencesRepository.getInstance(this)
-        lifecycleScope.launch {
-            prefs.enableMermaidFlow.collect { enabled ->
-                binding.switchMermaid.isChecked = enabled
-            }
-        }
-        binding.btnToggleMermaid.setOnClickListener {
-            val newState = !binding.switchMermaid.isChecked
-            binding.switchMermaid.isChecked = newState
-            lifecycleScope.launch { prefs.setEnableMermaid(newState) }
-        }
-    }
-
-    private fun setupFontSizeSettings() {
-        val prefs = PreferencesRepository.getInstance(this)
-        lifecycleScope.launch {
-            prefs.editorFontSizeFlow.collect { size ->
-                binding.tvFontSizeSummary.text = "${size.toInt()} sp"
-            }
-        }
-        binding.btnFontSize.setOnClickListener {
-            val sizes = arrayOf("12 sp", "14 sp", "15 sp (Default)", "16 sp", "18 sp", "20 sp", "22 sp")
-            val values = floatArrayOf(12f, 14f, 15f, 16f, 18f, 20f, 22f)
-            AlertDialog.Builder(this)
-                .setTitle("Select Editor Font Size")
-                .setItems(sizes) { _, which ->
-                    lifecycleScope.launch { prefs.setEditorFontSize(values[which]) }
-                }
-                .show()
         }
     }
 
     private fun setupBiometricSettings() {
-        val prefs = PreferencesRepository.getInstance(this)
+        val initialEnabled = kotlinx.coroutines.runBlocking { prefsRepo.biometricLockEnabledFlow.first() }
+        binding.switchBiometricLock.isChecked = initialEnabled
+
         lifecycleScope.launch {
-            prefs.biometricLockEnabledFlow.collect { enabled ->
-                binding.switchBiometric.isChecked = enabled
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.biometricLockEnabled.collect { isEnabled ->
+                    binding.switchBiometricLock.isChecked = isEnabled
+                }
             }
         }
 
-        val toggleBiometricAction = {
-            if (!BiometricHelper.canAuthenticate(this)) {
-                Toast.makeText(this, "Biometrics not setup on device", Toast.LENGTH_SHORT).show()
-            } else {
-                val isCurrentlyEnabled = binding.switchBiometric.isChecked
-                if (isCurrentlyEnabled) {
-                    // Revert visual state immediately to keep switch ON until authenticated
-                    binding.switchBiometric.isChecked = true
+        binding.btnToggleBiometricLock.setOnClickListener {
+            val willEnable = !binding.switchBiometricLock.isChecked
+            if (willEnable) {
+                if (BiometricHelper.canAuthenticate(this)) {
                     BiometricHelper.authenticate(
-                        this,
-                        title = "Disable Biometric Lock",
-                        subtitle = "Authenticate to turn off biometric protection",
+                        activity = this,
+                        title = "Enable App Lock",
+                        subtitle = "Authenticate to confirm biometric lock",
                         onSuccess = {
-                            binding.switchBiometric.isChecked = false
-                            lifecycleScope.launch { prefs.setBiometricLockEnabled(false) }
-                            Toast.makeText(this, "Biometric protection disabled", Toast.LENGTH_SHORT).show()
+                            viewModel.setBiometricLockEnabled(true)
+                            binding.switchBiometricLock.isChecked = true
+                            Toast.makeText(this, "Biometric lock enabled", Toast.LENGTH_SHORT).show()
                         },
                         onError = {
-                            binding.switchBiometric.isChecked = true
-                            Toast.makeText(this, "Authentication failed. Protection remains active.", Toast.LENGTH_SHORT).show()
-                        }
-                    )
-                } else {
-                    BiometricHelper.authenticate(
-                        this,
-                        title = "Enable Biometric Lock",
-                        subtitle = "Authenticate to enable biometric protection",
-                        onSuccess = {
-                            binding.switchBiometric.isChecked = true
-                            lifecycleScope.launch { prefs.setBiometricLockEnabled(true) }
-                            Toast.makeText(this, "Biometric protection enabled", Toast.LENGTH_SHORT).show()
-                        },
-                        onError = {
-                            binding.switchBiometric.isChecked = false
                             Toast.makeText(this, "Authentication failed", Toast.LENGTH_SHORT).show()
                         }
                     )
-                }
-            }
-        }
-
-        binding.btnToggleBiometric.setOnClickListener { toggleBiometricAction() }
-        binding.switchBiometric.setOnClickListener { toggleBiometricAction() }
-    }
-
-    private fun setupAutoBackupSettings() {
-        val prefs = PreferencesRepository.getInstance(this)
-        lifecycleScope.launch {
-            prefs.autoBackupEnabledFlow.collect { enabled ->
-                if (enabled) {
-                    binding.tvAutoBackupSummary.text = "Enabled: Daily auto-backup active"
                 } else {
-                    binding.tvAutoBackupSummary.text = "Disabled (Tap to configure SAF backup folder)"
+                    Toast.makeText(this, "Biometric authentication not available on this device", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                // Critical security gate: authenticate BEFORE disabling!
+                if (BiometricHelper.canAuthenticate(this)) {
+                    BiometricHelper.authenticate(
+                        activity = this,
+                        title = "Disable App Lock",
+                        subtitle = "Authenticate to disable biometric lock",
+                        onSuccess = {
+                            viewModel.setBiometricLockEnabled(false)
+                            binding.switchBiometricLock.isChecked = false
+                            Toast.makeText(this, "Biometric lock disabled", Toast.LENGTH_SHORT).show()
+                        },
+                        onError = {
+                            Toast.makeText(this, "Authentication required to disable lock", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                } else {
+                    viewModel.setBiometricLockEnabled(false)
+                    binding.switchBiometricLock.isChecked = false
                 }
             }
         }
-        binding.btnAutoBackup.setOnClickListener {
-            autoBackupTreeLauncher.launch(null)
-        }
-    }
-
-    private fun setupAiSettings() {
-        refreshAiSummaries()
-
-        binding.btnAiEndpoint.setOnClickListener {
-            val current = AiPreferences.getEndpoint(this)
-            showInputDialog("AI API Endpoint", "Enter OpenAI-compatible completion URL:", current) { newEndpoint ->
-                AiPreferences.setEndpoint(this, newEndpoint)
-                refreshAiSummaries()
-            }
-        }
-
-        binding.btnAiApiKey.setOnClickListener {
-            val current = AiPreferences.getApiKey(this)
-            showPasswordDialog("AI API Key", "Enter your secret API key (OpenAI / Groq / Gemini / OpenRouter):", current) { newKey ->
-                AiPreferences.setApiKey(this, newKey)
-                refreshAiSummaries()
-            }
-        }
-
-        binding.btnAiModel.setOnClickListener {
-            val current = AiPreferences.getModel(this)
-            showInputDialog("AI Model Name", "Enter model identifier (e.g. gpt-4o-mini, gemini-1.5-flash):", current) { newModel ->
-                AiPreferences.setModel(this, newModel)
-                refreshAiSummaries()
-            }
-        }
-    }
-
-    private fun refreshAiSummaries() {
-        binding.tvAiEndpointSummary.text = AiPreferences.getEndpoint(this)
-        val key = AiPreferences.getApiKey(this)
-        binding.tvAiApiKeySummary.text = if (key.isNotBlank()) "Configured (••••••••)" else "Not configured"
-        binding.tvAiModelSummary.text = AiPreferences.getModel(this)
     }
 
     private fun setupBackupActions() {
-        binding.btnImportHeyTap.setOnClickListener {
-            importHeyTapLauncher.launch(arrayOf("*/*", "application/json"))
-        }
+        val dateFormat = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US)
 
+        // 1. Export JSON
         binding.btnExportJson.setOnClickListener {
-            val defaultName = "lightnotes-backup-${System.currentTimeMillis()}.json"
-            exportJsonLauncher.launch(defaultName)
+            val fileName = "LightNotes_Backup_${dateFormat.format(Date())}.json"
+            exportJsonLauncher.launch(fileName)
         }
 
+        // 2. Restore JSON
         binding.btnImportJson.setOnClickListener {
-            importJsonLauncher.launch(arrayOf("*/*", "application/json"))
+            importJsonLauncher.launch(arrayOf("application/json", "text/plain"))
         }
 
+        // 3. Export Encrypted
         binding.btnExportEncrypted.setOnClickListener {
-            showPasswordDialog("Export Encrypted Backup", "Enter encryption password:", "") { password ->
-                pendingPassphrase = password
-                val defaultName = "lightnotes-${System.currentTimeMillis()}.enotes"
-                exportEncryptedLauncher.launch(defaultName)
+            promptPassphrase(isExport = true) { passphrase ->
+                pendingPassphrase = passphrase
+                val fileName = "LightNotes_Backup_${dateFormat.format(Date())}.enotes"
+                exportEncryptedLauncher.launch(fileName)
             }
         }
 
+        // 4. Restore Encrypted
         binding.btnImportEncrypted.setOnClickListener {
-            showPasswordDialog("Import Encrypted Backup", "Enter decryption password:", "") { password ->
-                pendingPassphrase = password
+            promptPassphrase(isExport = false) { passphrase ->
+                pendingPassphrase = passphrase
                 importEncryptedLauncher.launch(arrayOf("*/*"))
             }
         }
-    }
 
-    private fun importHeyTapFromUri(uri: Uri) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val inputStream = contentResolver.openInputStream(uri)
-                val jsonString = inputStream?.bufferedReader()?.use { it.readText() } ?: ""
-                val notes = HeyTapImporter.parseHeyTapBackup(jsonString)
-                if (notes.isNotEmpty()) {
-                    database.noteDao().insertAll(notes)
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            this@SettingsActivity,
-                            "Successfully imported ${notes.size} notes from HeyTap!",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            this@SettingsActivity,
-                            "No valid notes found in file",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        this@SettingsActivity,
-                        "Error importing HeyTap backup: ${e.localizedMessage}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
+        // 5. Import HeyTap
+        binding.btnImportHeyTap.setOnClickListener {
+            importHeyTapLauncher.launch(arrayOf("application/json", "text/plain"))
         }
     }
 
     private fun exportJsonToUri(uri: Uri) {
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             try {
-                val notes = database.noteDao().getAllNotesSync()
-                val folders = database.folderDao().getAllFoldersSync()
-                val json = BackupService.exportToJson(notes, folders)
-                contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    outputStream.write(json.toByteArray())
+                val jsonString = viewModel.exportBackupJson()
+                contentResolver.openOutputStream(uri)?.use { os ->
+                    os.write(jsonString.toByteArray(Charsets.UTF_8))
                 }
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@SettingsActivity, "JSON Export completed successfully", Toast.LENGTH_SHORT).show()
-                }
+                Toast.makeText(this@SettingsActivity, "Backup exported successfully", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@SettingsActivity, "Export failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                }
+                Toast.makeText(this@SettingsActivity, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
 
     private fun importJsonFromUri(uri: Uri) {
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch {
             try {
-                val json = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
-                val (notes, folders) = BackupService.parseFromJson(json)
-                if (folders.isNotEmpty()) {
-                    database.folderDao().insertAll(folders)
-                }
-                if (notes.isNotEmpty()) {
-                    database.noteDao().insertAll(notes)
-                }
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@SettingsActivity, "Imported ${notes.size} notes and ${folders.size} folders", Toast.LENGTH_LONG).show()
-                }
+                val jsonString = contentResolver.openInputStream(uri)?.use { inputStream ->
+                    inputStream.bufferedReader(Charsets.UTF_8).readText()
+                } ?: throw IllegalArgumentException("Could not read file")
+
+                val count = viewModel.importBackupJson(jsonString)
+                Toast.makeText(this@SettingsActivity, "Imported/merged $count notes", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@SettingsActivity, "Import failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                }
+                Toast.makeText(this@SettingsActivity, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    private fun exportEncryptedToUri(uri: Uri, pass: String) {
-        lifecycleScope.launch(Dispatchers.IO) {
+    private fun exportEncryptedToUri(uri: Uri, passphrase: String) {
+        lifecycleScope.launch {
             try {
-                val notes = database.noteDao().getAllNotesSync()
-                val folders = database.folderDao().getAllFoldersSync()
-                contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    BackupService.exportEncrypted(notes, folders, pass, outputStream)
+                contentResolver.openOutputStream(uri)?.use { os ->
+                    viewModel.exportEncryptedBackup(passphrase, os)
                 }
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@SettingsActivity, "Encrypted .enotes export completed", Toast.LENGTH_SHORT).show()
-                }
+                Toast.makeText(this@SettingsActivity, "Encrypted backup exported", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@SettingsActivity, "Encryption failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                }
+                Toast.makeText(this@SettingsActivity, "Encrypted export failed: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                pendingPassphrase = ""
             }
         }
     }
 
-    private fun importEncryptedFromUri(uri: Uri, pass: String) {
-        lifecycleScope.launch(Dispatchers.IO) {
+    private fun importEncryptedFromUri(uri: Uri, passphrase: String) {
+        lifecycleScope.launch {
             try {
-                val pair = contentResolver.openInputStream(uri)?.use { inputStream ->
-                    BackupService.importEncrypted(inputStream, pass)
-                }
-                if (pair != null) {
-                    val (notes, folders) = pair
-                    if (folders.isNotEmpty()) {
-                        database.folderDao().insertAll(folders)
-                    }
-                    if (notes.isNotEmpty()) {
-                        database.noteDao().insertAll(notes)
-                    }
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            this@SettingsActivity,
-                            "Decrypted and restored ${notes.size} notes",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
-                }
+                val count = contentResolver.openInputStream(uri)?.use { inputStream ->
+                    viewModel.importEncryptedBackup(passphrase, inputStream)
+                } ?: 0
+                Toast.makeText(this@SettingsActivity, "Decrypted and imported $count notes", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        this@SettingsActivity,
-                        "Decryption failed: Incorrect password or corrupt file",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
+                Toast.makeText(this@SettingsActivity, "Decryption/import failed: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                pendingPassphrase = ""
             }
         }
     }
 
-    private fun showInputDialog(title: String, message: String, currentValue: String, onEntered: (String) -> Unit) {
-        val input = EditText(this).apply {
-            setText(currentValue)
-            setSelection(currentValue.length)
-        }
-        AlertDialog.Builder(this)
-            .setTitle(title)
-            .setMessage(message)
-            .setView(input)
-            .setPositiveButton("Save") { _, _ ->
-                val text = input.text.toString().trim()
-                if (text.isNotEmpty()) {
-                    onEntered(text)
-                }
+    private fun importHeyTapFromUri(uri: Uri) {
+        lifecycleScope.launch {
+            try {
+                val jsonString = contentResolver.openInputStream(uri)?.use { inputStream ->
+                    inputStream.bufferedReader(Charsets.UTF_8).readText()
+                } ?: throw IllegalArgumentException("Could not read file")
+
+                val count = viewModel.importHeyTapBackup(jsonString)
+                Toast.makeText(this@SettingsActivity, "Imported $count Realme/HeyTap notes", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@SettingsActivity, "HeyTap import failed: ${e.message}", Toast.LENGTH_LONG).show()
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        }
     }
 
-    private fun showPasswordDialog(title: String, message: String, currentValue: String, onPasswordEntered: (String) -> Unit) {
+    private fun promptPassphrase(isExport: Boolean, onConfirmed: (String) -> Unit) {
         val input = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            if (currentValue.isNotEmpty()) {
-                setText(currentValue)
-                setSelection(currentValue.length)
-            }
-            hint = "Password"
+            hint = "Enter passphrase"
         }
 
         AlertDialog.Builder(this)
-            .setTitle(title)
-            .setMessage(message)
+            .setTitle(if (isExport) "Set Backup Passphrase" else "Enter Backup Passphrase")
             .setView(input)
-            .setPositiveButton("Save") { _, _ ->
+            .setPositiveButton("OK") { _, _ ->
                 val pass = input.text.toString().trim()
-                if (pass.isNotEmpty()) {
-                    onPasswordEntered(pass)
+                if (pass.isNotBlank()) {
+                    onConfirmed(pass)
                 } else {
-                    Toast.makeText(this, "Password cannot be empty", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Passphrase cannot be empty", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Cancel", null)

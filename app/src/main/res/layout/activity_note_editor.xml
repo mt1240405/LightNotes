@@ -7,9 +7,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_main"
-    android:fitsSystemWindows="false">
+    android:fitsSystemWindows="true">
 
-    <!-- Top Action Bar: Material 3 Expressive Toolbar -->
+    <!-- Top Action Bar: Single Material 3 Toolbar -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/editorToolbar"
         android:layout_width="0dp"
@@ -38,36 +38,13 @@
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <ImageButton
-                android:id="@+id/btnUndo"
-                android:layout_width="38dp"
-                android:layout_height="38dp"
-                android:alpha="0.35"
-                android:enabled="false"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Undo"
-                android:src="@drawable/ic_undo"
-                app:tint="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/btnRedo"
-                android:layout_width="38dp"
-                android:layout_height="38dp"
-                android:layout_marginStart="2dp"
-                android:alpha="0.35"
-                android:enabled="false"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Redo"
-                android:src="@drawable/ic_redo"
-                app:tint="@color/text_primary" />
-
             <!-- Clean M3 TextButton for Toggle Mode (Preview vs Edit) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnToggleMode"
                 style="@style/Widget.Material3.Button.TextButton"
                 android:layout_width="wrap_content"
-                android:layout_height="48dp"
-                android:minHeight="48dp"
+                android:layout_height="44dp"
+                android:minHeight="44dp"
                 android:layout_marginStart="4dp"
                 android:layout_marginEnd="4dp"
                 android:text="@string/preview_label"
@@ -82,7 +59,7 @@
                 android:paddingEnd="10dp"
                 app:cornerRadius="8dp" />
 
-            <!-- Share Button (Visible in Reading / Preview Mode) -->
+            <!-- First-Class Share Button -->
             <ImageButton
                 android:id="@+id/btnShare"
                 android:layout_width="38dp"
@@ -90,11 +67,9 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Share Note"
                 android:src="@drawable/ic_share"
-                android:visibility="gone"
                 app:tint="@color/text_primary" />
 
-            <!-- NOTE: Duplicate pin button removed from top bar. Only ivInlinePin exists in metadata row -->
-
+            <!-- Overflow Menu (Pin, Favorite, Move to Folder, Archive, Delete) -->
             <ImageButton
                 android:id="@+id/btnOverflowMenu"
                 android:layout_width="38dp"
@@ -107,7 +82,7 @@
         </LinearLayout>
     </com.google.android.material.appbar.MaterialToolbar>
 
-    <!-- Collapsible Search / Find Bar -->
+    <!-- Collapsible Find in Note Bar -->
     <LinearLayout
         android:id="@+id/layoutSearchBar"
         android:layout_width="0dp"
@@ -179,7 +154,7 @@
             app:tint="@color/text_hint" />
     </LinearLayout>
 
-    <!-- Main Content Area constrained strictly between Toolbar/SearchBar and Bottom Bar Container -->
+    <!-- Main Content Area constrained strictly between Top Bars and Bottom Formatting Toolbar -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollView"
         android:layout_width="0dp"
@@ -188,9 +163,9 @@
         android:clipToPadding="false"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingBottom="96dp"
+        android:paddingBottom="24dp"
         app:layout_constraintTop_toBottomOf="@id/layoutSearchBar"
-        app:layout_constraintBottom_toTopOf="@id/bottomBarContainer"
+        app:layout_constraintBottom_toTopOf="@id/bottomToolbar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -199,7 +174,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Single-line metadata bar above Title with 12dp top padding: dd/MM/yyyy, h:mm a | 125 words | Folder Name with clickable amber pin icon -->
+            <!-- Single-line metadata bar above Title: dd/MM/yyyy, h:mm a | 125 words | Folder Name with clickable pin -->
             <LinearLayout
                 android:id="@+id/layoutMetadataRow"
                 android:layout_width="match_parent"
@@ -219,7 +194,7 @@
                     android:ellipsize="end"
                     android:textColor="@color/text_hint"
                     android:textSize="12sp"
-                    tools:text="23/11/2026, 2:00 PM | 125 words | Personal" />
+                    tools:text="24/11/2026, 2:00 AM | 125 words | Personal" />
 
                 <!-- The ONLY Pin icon in the editor -->
                 <ImageView
@@ -250,7 +225,7 @@
                 android:textSize="22sp"
                 android:textStyle="bold" />
 
-            <!-- Frame containing Editor EditText or Preview TextView -->
+            <!-- Frame containing Editor EditText or Native Preview TextView -->
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -273,7 +248,7 @@
                     android:textColorHint="@color/text_hint"
                     android:textSize="15sp" />
 
-                <!-- Native Markwon Rendered TextView (Safe: NO textIsSelectable) -->
+                <!-- Native Markwon Rendered TextView -->
                 <TextView
                     android:id="@+id/tvNoteRendered"
                     android:layout_width="match_parent"
@@ -288,474 +263,138 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Floating Text Selection Highlight & Format Bar (Shown when text is selected) -->
-    <LinearLayout
-        android:id="@+id/layoutSelectionBar"
-        android:layout_width="wrap_content"
-        android:layout_height="40dp"
-        android:layout_marginBottom="8dp"
-        android:background="@drawable/bg_preview_toggle_inactive"
-        android:elevation="6dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/bottomBarContainer"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <View
-            android:id="@+id/swatchAmber"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/bg_swatch_amber"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <View
-            android:id="@+id/swatchCoral"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/bg_swatch_coral"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <View
-            android:id="@+id/swatchBlue"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/bg_swatch_blue"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <View
-            android:id="@+id/swatchGreen"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/bg_swatch_green"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <View
-            android:id="@+id/swatchGray"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/bg_swatch_gray"
-            android:clickable="true"
-            android:focusable="true" />
-
-        <View
-            android:layout_width="1dp"
-            android:layout_height="20dp"
-            android:layout_marginEnd="6dp"
-            android:background="@color/divider" />
-
-        <ImageButton
-            android:id="@+id/btnSelBold"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Bold"
-            android:src="@drawable/ic_format_bold"
-            app:tint="@color/text_primary" />
-
-        <ImageButton
-            android:id="@+id/btnSelUnderline"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Underline"
-            android:src="@drawable/ic_underline"
-            app:tint="@color/text_primary" />
-
-        <ImageButton
-            android:id="@+id/btnSelStrike"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Strikethrough"
-            android:src="@drawable/ic_strikethrough"
-            app:tint="@color/text_primary" />
-
-        <ImageButton
-            android:id="@+id/btnSelCode"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Code"
-            android:src="@drawable/ic_format_code"
-            app:tint="@color/text_primary" />
-    </LinearLayout>
-
-    <!-- Two-State Bottom Container -->
-    <LinearLayout
-        android:id="@+id/bottomBarContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal"
+    <!-- Single Compact Formatting Toolbar: Horizontally scrollable, docked above IME -->
+    <HorizontalScrollView
+        android:id="@+id/bottomToolbar"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        android:background="?attr/colorSurface"
+        android:elevation="4dp"
+        android:scrollbars="none"
+        android:overScrollMode="never"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- State A: Floating Centered 4-Icon Action Bar (Keyboard Closed) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/layoutFloatingToolbar"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="2dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="?attr/colorOutlineVariant"
-            app:cardBackgroundColor="?attr/colorSurfaceContainer">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp">
-
-                <!-- 1. AI Assist -->
-                <LinearLayout
-                    android:id="@+id/btnAiAssistFloating"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:orientation="horizontal"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="10dp">
-
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:src="@drawable/ic_ai_sparkle" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="AI Assist"
-                        android:textColor="@color/brand_amber"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="1dp"
-                    android:layout_height="20dp"
-                    android:layout_marginStart="4dp"
-                    android:layout_marginEnd="6dp"
-                    android:background="@color/divider" />
-
-                <!-- 2. Checklist -->
-                <ImageButton
-                    android:id="@+id/btnTaskFloating"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Checklist"
-                    android:src="@drawable/ic_format_task"
-                    app:tint="@color/text_primary" />
-
-                <!-- 3. Voice Note -->
-                <ImageButton
-                    android:id="@+id/btnVoiceFloating"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="4dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Voice Note"
-                    android:src="@drawable/ic_mic"
-                    app:tint="@color/text_primary" />
-
-                <!-- 4. Quick Insert (+) -->
-                <ImageButton
-                    android:id="@+id/btnInsertFloating"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="4dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Quick Insert"
-                    android:src="@drawable/ic_add"
-                    app:tint="@color/brand_amber" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- State B: Docked Flat Action Bar & Expandable Formatting Row (Keyboard Open) -->
         <LinearLayout
-            android:id="@+id/layoutDockedToolbarContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="?attr/colorSurfaceContainer"
-            android:visibility="gone">
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
 
-            <!-- Expandable Formatting Sub-Row (Toggled via Aa) -->
-            <HorizontalScrollView
-                android:id="@+id/layoutFormattingRow"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:background="?attr/colorSurface"
-                android:scrollbars="none"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:visibility="gone">
+            <ImageButton
+                android:id="@+id/btnFormatBold"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Bold"
+                android:src="@drawable/ic_format_bold"
+                app:tint="@color/text_primary" />
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+            <ImageButton
+                android:id="@+id/btnFormatItalic"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Italic"
+                android:src="@drawable/ic_format_italic"
+                app:tint="@color/text_primary" />
 
-                    <!-- Headings -->
-                    <ImageButton
-                        android:id="@+id/fmtHeading"
-                        android:layout_width="@dimen/format_btn_size"
-                        android:layout_height="@dimen/format_btn_size"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Heading"
-                        android:src="@drawable/ic_format_heading"
-                        app:tint="@color/text_primary" />
+            <ImageButton
+                android:id="@+id/btnFormatHeading"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Heading"
+                android:src="@drawable/ic_format_heading"
+                app:tint="@color/text_primary" />
 
-                    <!-- Bold -->
-                    <ImageButton
-                        android:id="@+id/fmtBold"
-                        android:layout_width="@dimen/format_btn_size"
-                        android:layout_height="@dimen/format_btn_size"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Bold"
-                        android:src="@drawable/ic_format_bold"
-                        app:tint="@color/text_primary" />
+            <ImageButton
+                android:id="@+id/btnFormatBullet"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Bulleted List"
+                android:src="@drawable/ic_format_list"
+                app:tint="@color/text_primary" />
 
-                    <!-- Italic -->
-                    <ImageButton
-                        android:id="@+id/fmtItalic"
-                        android:layout_width="@dimen/format_btn_size"
-                        android:layout_height="@dimen/format_btn_size"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Italic"
-                        android:src="@drawable/ic_format_italic"
-                        app:tint="@color/text_primary" />
+            <ImageButton
+                android:id="@+id/btnFormatNumber"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Numbered List"
+                android:src="@drawable/ic_format_numbered_list"
+                app:tint="@color/text_primary" />
 
-                    <!-- Strikethrough -->
-                    <ImageButton
-                        android:id="@+id/fmtStrikethrough"
-                        android:layout_width="@dimen/format_btn_size"
-                        android:layout_height="@dimen/format_btn_size"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Strikethrough"
-                        android:src="@drawable/ic_strikethrough"
-                        app:tint="@color/text_primary" />
+            <ImageButton
+                android:id="@+id/btnFormatChecklist"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Checklist"
+                android:src="@drawable/ic_format_task"
+                app:tint="@color/text_primary" />
 
-                    <!-- Bullet List -->
-                    <ImageButton
-                        android:id="@+id/fmtList"
-                        android:layout_width="@dimen/format_btn_size"
-                        android:layout_height="@dimen/format_btn_size"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Bullet List"
-                        android:src="@drawable/ic_format_list"
-                        app:tint="@color/text_primary" />
+            <ImageButton
+                android:id="@+id/btnFormatLink"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Link"
+                android:src="@drawable/ic_link"
+                app:tint="@color/text_primary" />
 
-                    <!-- Numbered List -->
-                    <ImageButton
-                        android:id="@+id/fmtNumberedList"
-                        android:layout_width="@dimen/format_btn_size"
-                        android:layout_height="@dimen/format_btn_size"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Numbered List"
-                        android:src="@drawable/ic_format_numbered_list"
-                        app:tint="@color/text_primary" />
+            <ImageButton
+                android:id="@+id/btnFormatCode"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Code Block"
+                android:src="@drawable/ic_format_code"
+                app:tint="@color/text_primary" />
 
-                    <!-- Task / Checkbox -->
-                    <ImageButton
-                        android:id="@+id/fmtTask"
-                        android:layout_width="@dimen/format_btn_size"
-                        android:layout_height="@dimen/format_btn_size"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Task Checkbox"
-                        android:src="@drawable/ic_format_task"
-                        app:tint="@color/text_primary" />
-
-                    <!-- Quote -->
-                    <ImageButton
-                        android:id="@+id/fmtQuote"
-                        android:layout_width="@dimen/format_btn_size"
-                        android:layout_height="@dimen/format_btn_size"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Quote"
-                        android:src="@drawable/ic_format_quote"
-                        app:tint="@color/text_primary" />
-
-                    <!-- Link -->
-                    <ImageButton
-                        android:id="@+id/fmtLink"
-                        android:layout_width="@dimen/format_btn_size"
-                        android:layout_height="@dimen/format_btn_size"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Link"
-                        android:src="@drawable/ic_link"
-                        app:tint="@color/text_primary" />
-
-                    <!-- Divider -->
-                    <ImageButton
-                        android:id="@+id/fmtDivider"
-                        android:layout_width="@dimen/format_btn_size"
-                        android:layout_height="@dimen/format_btn_size"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="Horizontal Divider"
-                        android:src="@drawable/ic_format_divider"
-                        app:tint="@color/text_primary" />
-
-                    <!-- Advanced Formatting Sub-Row (Visible only in Advanced Mode) -->
-                    <LinearLayout
-                        android:id="@+id/layoutAdvancedFormatting"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:visibility="gone">
-
-                        <View
-                            android:layout_width="1dp"
-                            android:layout_height="20dp"
-                            android:layout_marginStart="4dp"
-                            android:layout_marginEnd="6dp"
-                            android:background="@color/divider" />
-
-                        <ImageButton
-                            android:id="@+id/fmtTable"
-                            android:layout_width="@dimen/format_btn_size"
-                            android:layout_height="@dimen/format_btn_size"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="Table Builder"
-                            android:src="@drawable/ic_table"
-                            app:tint="@color/brand_amber" />
-
-                        <ImageButton
-                            android:id="@+id/fmtMathStudio"
-                            android:layout_width="@dimen/format_btn_size"
-                            android:layout_height="@dimen/format_btn_size"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="Math Formula Studio"
-                            android:src="@drawable/ic_format_math"
-                            app:tint="@color/brand_amber" />
-
-                        <ImageButton
-                            android:id="@+id/fmtCalloutsCode"
-                            android:layout_width="@dimen/format_btn_size"
-                            android:layout_height="@dimen/format_btn_size"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="Callouts and Code Blocks"
-                            android:src="@drawable/ic_format_code"
-                            app:tint="@color/brand_amber" />
-
-                        <ImageButton
-                            android:id="@+id/fmtMermaid"
-                            android:layout_width="@dimen/format_btn_size"
-                            android:layout_height="@dimen/format_btn_size"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="Mermaid Diagram"
-                            android:src="@drawable/ic_ai_sparkle"
-                            app:tint="@color/brand_amber" />
-                    </LinearLayout>
-                </LinearLayout>
-            </HorizontalScrollView>
+            <ImageButton
+                android:id="@+id/btnFormatQuote"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Blockquote"
+                android:src="@drawable/ic_format_quote"
+                app:tint="@color/text_primary" />
 
             <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="?attr/colorOutlineVariant" />
+                android:layout_width="1dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:background="@color/divider" />
 
-            <!-- Slim Docked Action Bar: AI Assist, /, Checklist, Aa, Voice Note, + -->
-            <LinearLayout
-                android:id="@+id/layoutDockedToolbar"
-                android:layout_width="match_parent"
-                android:layout_height="46dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp">
+            <ImageButton
+                android:id="@+id/btnUndo"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:alpha="0.4"
+                android:enabled="false"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Undo"
+                android:src="@drawable/ic_undo"
+                app:tint="@color/text_primary" />
 
-                <!-- 1. AI Assist -->
-                <ImageButton
-                    android:id="@+id/btnAiAssistDocked"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="AI Assist"
-                    android:src="@drawable/ic_ai_sparkle"
-                    app:tint="@color/brand_amber" />
+            <ImageButton
+                android:id="@+id/btnRedo"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:alpha="0.4"
+                android:enabled="false"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Redo"
+                android:src="@drawable/ic_redo"
+                app:tint="@color/text_primary" />
 
-                <!-- 2. Slash Command (/) -->
-                <ImageButton
-                    android:id="@+id/btnSlashCommand"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Slash Commands"
-                    android:src="@drawable/ic_slash"
-                    app:tint="@color/text_primary" />
-
-                <!-- 3. Checklist -->
-                <ImageButton
-                    android:id="@+id/btnTaskDocked"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Checklist"
-                    android:src="@drawable/ic_format_task"
-                    app:tint="@color/text_primary" />
-
-                <!-- 4. Aa Formatting Toggle -->
-                <ImageButton
-                    android:id="@+id/btnFormattingAa"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Formatting Options"
-                    android:src="@drawable/ic_text_format"
-                    app:tint="@color/text_primary" />
-
-                <!-- 5. Voice Note -->
-                <ImageButton
-                    android:id="@+id/btnVoiceDocked"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Voice Note"
-                    android:src="@drawable/ic_mic"
-                    app:tint="@color/text_primary" />
-
-                <!-- 6. Quick Insert (+) -->
-                <ImageButton
-                    android:id="@+id/btnInsertDocked"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Quick Insert"
-                    android:src="@drawable/ic_add"
-                    app:tint="@color/brand_amber" />
-            </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
+    </HorizontalScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

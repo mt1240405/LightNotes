@@ -5,46 +5,46 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.PathInterpolator
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityOptionsCompat
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.lightnotes.app.R
-import com.lightnotes.app.data.AppDatabase
-import com.lightnotes.app.data.FolderEntity
-import com.lightnotes.app.data.NoteEntity
+import com.lightnotes.app.core.model.Folder
+import com.lightnotes.app.core.model.Note
+import com.lightnotes.app.data.PreferencesRepository
 import com.lightnotes.app.databinding.ActivityMainBinding
-import com.lightnotes.app.search.NativeSearchOptimizer
 import com.lightnotes.app.security.BiometricHelper
-import kotlinx.coroutines.flow.collectLatest
+import com.lightnotes.app.ui.viewmodel.NotesFilter
+import com.lightnotes.app.ui.viewmodel.NotesFilterType
+import com.lightnotes.app.ui.viewmodel.NotesViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private val database by lazy { AppDatabase.getDatabase(this) }
+    private val viewModel: NotesViewModel by viewModels()
+    private val prefsRepo by lazy { PreferencesRepository.getInstance(this) }
+
     private lateinit var notesAdapter: NotesAdapter
     private lateinit var folderTabAdapter: FolderTabAdapter
 
-    private var allNotes = listOf<NoteEntity>()
-    private var allFolders = listOf<FolderEntity>()
-    private var currentFilterId: Long = -1 // -1 = All, -2 = Pinned, -3 = Trash, -4 = Favorites, -5 = Archived
-    private var searchQuery: String = ""
-    private var isGridView: Boolean = true
-    private var isAuthenticating: Boolean = false
-
-    private val colorOsInterpolator = PathInterpolator(0.3f, 0.0f, 0.1f, 1.0f)
+    private var isGridView: Boolean = false // Linear list is default per Lite spec
+    private var isAppUnlocked: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         HighRefreshRateHelper.applyHighRefreshRate(this)
@@ -56,12 +56,34 @@ class MainActivity : AppCompatActivity() {
         setupWindowInsets()
         setupRecyclerViews()
         setupListeners()
+        checkAppLock()
         observeData()
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         HighRefreshRateHelper.applyHighRefreshRate(this)
+    }
+
+    private fun checkAppLock() {
+        lifecycleScope.launch {
+            val isLockEnabled = prefsRepo.biometricLockEnabledFlow.first()
+            if (isLockEnabled && !isAppUnlocked && BiometricHelper.canAuthenticate(this@MainActivity)) {
+                BiometricHelper.authenticate(
+                    activity = this@MainActivity,
+                    title = "LightNotes Locked",
+                    subtitle = "Verify identity to view notes",
+                    onSuccess = {
+                        isAppUnlocked = true
+                    },
+                    onError = {
+                        finish()
+                    }
+                )
+            } else {
+                isAppUnlocked = true
+            }
+        }
     }
 
     private fun setupWindowInsets() {
@@ -94,61 +116,41 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupRecyclerViews() {
         folderTabAdapter = FolderTabAdapter { selectedTab ->
-            currentFilterId = selectedTab.id
-            applyFilterAndSearch()
+            val filter = when (selectedTab.filterType) {
+                NotesFilterType.FOLDER -> NotesFilter(
+                    type = NotesFilterType.FOLDER,
+                    folderGlobalId = selectedTab.folderGlobalId,
+                    folderName = selectedTab.name
+                )
+                else -> NotesFilter(type = selectedTab.filterType)
+            }
+            viewModel.setFilter(filter)
         }
         binding.rvFolderTabs.layoutManager =
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         binding.rvFolderTabs.adapter = folderTabAdapter
 
         notesAdapter = NotesAdapter(
-            onNoteClicked = { note, cardView ->
-                if (isAuthenticating) return@NotesAdapter
-                if (note.isLocked && BiometricHelper.canAuthenticate(this)) {
-                    isAuthenticating = true
-                    BiometricHelper.authenticate(
-                        this,
-                        title = "Protected Note",
-                        subtitle = "Authenticate to access ${note.title}",
-                        onSuccess = {
-                            isAuthenticating = false
-                            openNoteEditor(note, cardView, biometricVerified = true)
-                        },
-                        onError = {
-                            isAuthenticating = false
-                            Toast.makeText(this, "Authentication required", Toast.LENGTH_SHORT).show()
-                        }
-                    )
-                } else {
-                    openNoteEditor(note, cardView, biometricVerified = false)
-                }
+            onNoteClicked = { note, _ ->
+                openNoteEditor(note)
             },
             onNoteLongClicked = { note ->
-                showNoteOptionsDialog(note)
+                showNoteContextMenu(note)
                 true
             }
         )
 
+        // Default: Linear list per Lite specification
         updateLayoutManager()
         binding.rvNotes.adapter = notesAdapter
-        HighRefreshRateHelper.optimizeScrollingContainer(binding.rvNotes)
-    }
-
-    private fun openNoteEditor(note: NoteEntity, cardView: View, biometricVerified: Boolean = false) {
-        val intent = Intent(this, NoteEditorActivity::class.java).apply {
-            putExtra(NoteEditorActivity.EXTRA_NOTE_ID, note.id)
-            putExtra(NoteEditorActivity.EXTRA_BIOMETRIC_VERIFIED, biometricVerified)
-        }
-        val options = ActivityOptionsCompat.makeScaleUpAnimation(
-            cardView, 0, 0, cardView.width, cardView.height
-        )
-        startActivity(intent, options.toBundle())
     }
 
     private fun updateLayoutManager() {
         if (isGridView) {
             binding.rvNotes.layoutManager =
-                StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
+                StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL).apply {
+                    gapStrategy = StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS
+                }
             binding.btnViewToggle.setImageResource(R.drawable.ic_list_view)
         } else {
             binding.rvNotes.layoutManager = LinearLayoutManager(this)
@@ -156,23 +158,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
     private fun setupListeners() {
-        binding.fabAddNote.setOnClickListener {
-            val intent = Intent(this, NoteEditorActivity::class.java)
-            if (currentFilterId >= 0) {
-                intent.putExtra(NoteEditorActivity.EXTRA_FOLDER_ID, currentFilterId)
-            }
-            val options = ActivityOptionsCompat.makeScaleUpAnimation(
-                binding.fabAddNote, 0, 0, binding.fabAddNote.width, binding.fabAddNote.height
-            )
-            startActivity(intent, options.toBundle())
-        }
-
-        setupPressMicroAnimation(binding.fabAddNote)
-        setupPressMicroAnimation(binding.btnViewToggle)
-        setupPressMicroAnimation(binding.btnSettings)
-
         binding.btnViewToggle.setOnClickListener {
             isGridView = !isGridView
             updateLayoutManager()
@@ -182,14 +168,23 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
+        binding.fabAddNote.setOnClickListener {
+            val intent = Intent(this, NoteEditorActivity::class.java)
+            val currentFilter = viewModel.filter.value
+            if (currentFilter.type == NotesFilterType.FOLDER && currentFilter.folderGlobalId != null) {
+                intent.putExtra(NoteEditorActivity.EXTRA_FOLDER_ID, currentFilter.folderGlobalId)
+            }
+            startActivity(intent)
+        }
+
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                searchQuery = s?.toString()?.trim() ?: ""
-                binding.btnClearSearch.visibility = if (searchQuery.isNotEmpty()) View.VISIBLE else View.GONE
-                applyFilterAndSearch()
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                val query = s?.toString().orEmpty()
+                viewModel.setSearchQuery(query)
+                binding.btnClearSearch.visibility = if (query.isNotEmpty()) View.VISIBLE else View.GONE
             }
-            override fun afterTextChanged(s: Editable?) {}
         })
 
         binding.btnClearSearch.setOnClickListener {
@@ -197,129 +192,90 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private fun setupPressMicroAnimation(view: View) {
-        view.setOnTouchListener { v, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    v.animate().scaleX(0.94f).scaleY(0.94f).setDuration(120).setInterpolator(colorOsInterpolator).start()
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    v.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).setInterpolator(colorOsInterpolator).start()
-                }
-            }
-            false
-        }
-    }
-
     private fun observeData() {
         lifecycleScope.launch {
-            database.noteDao().getActiveNotes().collectLatest { notes ->
-                allNotes = notes
-                updateFolderTabs()
-                applyFilterAndSearch()
-            }
-        }
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.notes.collect { notes ->
+                        notesAdapter.submitList(notes)
+                        val count = notes.size
+                        binding.tvNoteCount.text = "$count ${if (count == 1) "note" else "notes"}"
+                        binding.layoutEmpty.visibility = if (notes.isEmpty()) View.VISIBLE else View.GONE
+                    }
+                }
 
-        lifecycleScope.launch {
-            database.folderDao().getAllFolders().collectLatest { folders ->
-                allFolders = folders
-                updateFolderTabs()
+                launch {
+                    viewModel.folders.collect { folders ->
+                        updateFolderTabs(folders)
+                    }
+                }
             }
         }
     }
 
-    private fun updateFolderTabs() {
+    private fun updateFolderTabs(folders: List<Folder>) {
         val tabs = mutableListOf<FolderTabItem>()
-        tabs.add(FolderTabItem(-1, getString(R.string.folder_all), allNotes.size))
+        tabs.add(FolderTabItem(NotesFilterType.ALL, null, "All Notes"))
+        tabs.add(FolderTabItem(NotesFilterType.FAVORITES, null, "Favorites"))
 
-        val pinnedCount = allNotes.count { it.isPinned }
-        if (pinnedCount > 0) {
-            tabs.add(FolderTabItem(-2, getString(R.string.folder_pinned), pinnedCount))
+        for (folder in folders) {
+            tabs.add(FolderTabItem(NotesFilterType.FOLDER, folder.globalId, folder.name))
         }
 
-        val favCount = allNotes.count { it.isFavorite }
-        if (favCount > 0) {
-            tabs.add(FolderTabItem(-4, "Favorites", favCount))
-        }
-
-        for (folder in allFolders) {
-            val count = allNotes.count { it.folderId == folder.id }
-            tabs.add(FolderTabItem(folder.id, folder.name, count))
-        }
-
-        val archCount = allNotes.count { it.isArchived }
-        if (archCount > 0) {
-            tabs.add(FolderTabItem(-5, "Archived", archCount))
-        }
-
-        tabs.add(FolderTabItem(-3, getString(R.string.folder_trash)))
+        tabs.add(FolderTabItem(NotesFilterType.ARCHIVE, null, "Archive"))
+        tabs.add(FolderTabItem(NotesFilterType.TRASH, null, "Trash"))
 
         folderTabAdapter.submitTabs(tabs)
     }
 
-    private fun applyFilterAndSearch() {
-        var filtered = when (currentFilterId) {
-            -1L -> allNotes
-            -2L -> allNotes.filter { it.isPinned }
-            -4L -> allNotes.filter { it.isFavorite }
-            -5L -> allNotes.filter { it.isArchived }
-            -3L -> emptyList()
-            else -> allNotes.filter { it.folderId == currentFilterId }
+    private fun openNoteEditor(note: Note) {
+        val intent = Intent(this, NoteEditorActivity::class.java).apply {
+            putExtra(NoteEditorActivity.EXTRA_GLOBAL_ID, note.globalId)
+            putExtra(NoteEditorActivity.EXTRA_NOTE_ID, note.localId)
         }
-
-        if (searchQuery.isNotEmpty()) {
-            filtered = NativeSearchOptimizer.rankNotes(searchQuery, filtered)
-        }
-
-        notesAdapter.submitList(filtered)
-        binding.tvNoteCount.text = getString(R.string.notes_count, filtered.size)
-        binding.layoutEmpty.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
+        startActivity(intent)
     }
 
-    private fun showNoteOptionsDialog(note: NoteEntity) {
-        val pinAction = if (note.isPinned) "Unpin Note" else "Pin to Top"
-        val favAction = if (note.isFavorite) "Remove from Favorites" else "Mark Favorite"
-        val lockAction = if (note.isLocked) "Unlock Note (Remove Protection)" else "Lock Note (Biometric)"
-        val deleteAction = if (note.isDeleted) "Restore Note" else "Move to Trash"
-        val options = arrayOf(pinAction, favAction, lockAction, deleteAction)
+    private fun showNoteContextMenu(note: Note) {
+        val currentFilter = viewModel.filter.value
+        val isTrash = currentFilter.type == NotesFilterType.TRASH || note.isDeleted
 
-        AlertDialog.Builder(this)
-            .setTitle(note.title.ifBlank { "Note Options" })
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> {
-                        lifecycleScope.launch {
-                            database.noteDao().update(note.copy(isPinned = !note.isPinned))
+        val popup = PopupMenu(this, binding.root)
+        if (isTrash) {
+            popup.menu.add(0, 1, 0, "Restore Note")
+            popup.menu.add(0, 2, 1, "Delete Permanently")
+        } else {
+            popup.menu.add(0, 3, 0, if (note.isPinned) "Unpin Note" else "Pin Note")
+            popup.menu.add(0, 4, 1, if (note.isFavorite) "Remove from Favorites" else "Add to Favorites")
+            popup.menu.add(0, 5, 2, "Move to Trash")
+        }
+
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> {
+                    viewModel.restoreFromTrash(note.globalId)
+                    Toast.makeText(this, "Note restored", Toast.LENGTH_SHORT).show()
+                }
+                2 -> {
+                    AlertDialog.Builder(this)
+                        .setTitle("Delete Permanently?")
+                        .setMessage("This action cannot be undone.")
+                        .setPositiveButton("Delete") { _, _ ->
+                            viewModel.permanentlyDelete(note.globalId)
+                            Toast.makeText(this, "Note permanently deleted", Toast.LENGTH_SHORT).show()
                         }
-                    }
-                    1 -> {
-                        lifecycleScope.launch {
-                            database.noteDao().update(note.copy(isFavorite = !note.isFavorite))
-                        }
-                    }
-                    2 -> {
-                        if (BiometricHelper.canAuthenticate(this)) {
-                            BiometricHelper.authenticate(
-                                this,
-                                title = if (note.isLocked) "Unlock Note" else "Lock Note",
-                                onSuccess = {
-                                    lifecycleScope.launch {
-                                        database.noteDao().update(note.copy(isLocked = !note.isLocked))
-                                    }
-                                }
-                            )
-                        } else {
-                            Toast.makeText(this, "Biometrics not available on device", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                    3 -> {
-                        lifecycleScope.launch {
-                            database.noteDao().update(note.copy(isDeleted = !note.isDeleted))
-                        }
-                    }
+                        .setNegativeButton("Cancel", null)
+                        .show()
+                }
+                3 -> viewModel.togglePin(note.globalId)
+                4 -> viewModel.toggleFavorite(note.globalId)
+                5 -> {
+                    viewModel.moveToTrash(note.globalId)
+                    Toast.makeText(this, "Moved to trash", Toast.LENGTH_SHORT).show()
                 }
             }
-            .show()
+            true
+        }
+        popup.show()
     }
 }

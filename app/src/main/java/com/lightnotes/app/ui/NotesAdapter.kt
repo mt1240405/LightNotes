@@ -11,16 +11,16 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.lightnotes.app.R
-import com.lightnotes.app.data.NoteEntity
+import com.lightnotes.app.core.model.Note
 import com.lightnotes.app.databinding.ItemNoteCardBinding
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 class NotesAdapter(
-    private val onNoteClicked: (NoteEntity, View) -> Unit,
-    private val onNoteLongClicked: (NoteEntity) -> Boolean
-) : ListAdapter<NoteEntity, NotesAdapter.NoteViewHolder>(NoteDiffCallback()) {
+    private val onNoteClicked: (Note, View) -> Unit,
+    private val onNoteLongClicked: (Note) -> Boolean
+) : ListAdapter<Note, NotesAdapter.NoteViewHolder>(NoteDiffCallback()) {
 
     private val colorOsInterpolator = PathInterpolator(0.3f, 0.0f, 0.1f, 1.0f)
 
@@ -54,7 +54,7 @@ class NotesAdapter(
         private val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
 
         @SuppressLint("ClickableViewAccessibility")
-        fun bind(note: NoteEntity) {
+        fun bind(note: Note) {
             val context = binding.root.context
             val displayTitle = if (note.title.isNotBlank()) note.title else "Untitled Note"
             binding.tvNoteTitle.text = displayTitle
@@ -69,7 +69,7 @@ class NotesAdapter(
                 binding.tvNotePreview.visibility = View.GONE
             }
 
-            binding.tvNoteDate.text = dateFormat.format(Date(note.updatedAt))
+            binding.tvNoteDate.text = dateFormat.format(Date(note.updatedAtUtc))
 
             // Folded-corner Amber Bookmark Badge on Pinned Cards
             binding.ivPinnedBadge.visibility = if (note.isPinned) View.VISIBLE else View.GONE
@@ -105,7 +105,7 @@ class NotesAdapter(
                 binding.layoutChecklistChip.visibility = View.GONE
             }
 
-            // Tactile press-scale micro-animation (0.96f scale, 120ms)
+            // Tactile press-scale micro-animation
             binding.cardNote.setOnTouchListener { v, event ->
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
@@ -149,12 +149,12 @@ class NotesAdapter(
         }
     }
 
-    class NoteDiffCallback : DiffUtil.ItemCallback<NoteEntity>() {
-        override fun areItemsTheSame(oldItem: NoteEntity, newItem: NoteEntity): Boolean {
-            return oldItem.id == newItem.id
+    class NoteDiffCallback : DiffUtil.ItemCallback<Note>() {
+        override fun areItemsTheSame(oldItem: Note, newItem: Note): Boolean {
+            return oldItem.globalId == newItem.globalId
         }
 
-        override fun areContentsTheSame(oldItem: NoteEntity, newItem: NoteEntity): Boolean {
+        override fun areContentsTheSame(oldItem: Note, newItem: Note): Boolean {
             return oldItem == newItem
         }
     }
