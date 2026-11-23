@@ -13,8 +13,8 @@ Default manufacturer note applications (ColorOS Notes, Samsung Notes, Apple Note
 
 | Characteristic | Stock OEM Notes (ColorOS, Samsung, Apple) | LightNotes Lite |
 |:---|:---|:---|
-| **Release APK Size** | 70 MB – 140 MB | **~2.47 MB** (Verified R8 + Resource Shrinking) |
-| **Debug APK Size** | 100 MB – 180 MB | **~7.99 MB** |
+| **Release APK Size** | 70 MB – 140 MB | **~2.59 MB** (Verified R8 + Resource Shrinking) |
+| **Debug APK Size** | 100 MB – 180 MB | **~8.45 MB** |
 | **Startup to Typing** | 1,200ms – 2,500ms (cloud sync checks, account banners) | **< 100ms** (immediate text surface) |
 | **Core Workflow** | Heavy Chromium WebViews, JavaScript bridges, analytics | **100% Pure Kotlin Android Views + Native Markwon** |
 | **Native Toolchains** | Heavy C++ / Rust shared libraries, Chromium runtimes | **Zero Rust/Cargo, Zero NDK binaries** |
@@ -32,7 +32,7 @@ Default manufacturer note applications (ColorOS Notes, Samsung Notes, Apple Note
 * **Fast Native Markdown Preview:** Native Markwon rendering without WebViews. Supports headings, bold, italic, strikethrough, bulleted/numbered lists, blockquotes, code blocks, links, and **interactive checklists** (`- [ ]` / `- [x]`).
 * **First-Class Native Sharing (< 100ms):** Reads live in-memory edit buffers immediately without requiring save-and-close. Share as clean plain text or raw `.md` source.
 * **Offline SQLite FTS4 Search:** Fast as-you-type search ranking title matches strictly above body matches, prioritizing pinned and recent notes.
-* **Stage A Sync-Ready Architecture:** 4-layer separation (`App UI`, `Core`, `Storage`, `Platform Services`), Room v3 schema with non-destructive migration, UUID `globalId` tracking, monotonically increasing document revisions, and transactional `sync_outbox` logging.
+* **Stage A Sync-Ready Architecture:** 4-layer separation (`App UI`, `Core`, `Storage`, `Platform Services`), Room v3 schema with non-destructive canonical table recreation migration, UUID `globalId` tracking, monotonically increasing document revisions, and transactional `sync_outbox` logging.
 * **Portable Versioned Backup:** Export and import notes with the standard `lightnotes-backup` v1 JSON format or passphrase-protected AES-256-GCM `.enotes` archives.
 
 ---
@@ -41,8 +41,8 @@ Default manufacturer note applications (ColorOS Notes, Samsung Notes, Apple Note
 
 | Build Variant | Baseline Size | LightNotes Lite v1.0 | Size Reduction | Target Verification |
 |:---|:---|:---|:---|:---|
-| **Debug APK (`app-debug.apk`)** | 13.05 MB (13,681,634 B) | **7.99 MB** (8,377,268 B) | **-38.8%** (-5.06 MB) | Clean debug build |
-| **Release APK (`app-release.apk`)** | 3.56 MB (3,727,818 B) | **2.47 MB** (2,586,741 B) | **-30.6%** (-1.08 MB) | **STRICTLY < 10 MB (PASS)** |
+| **Debug APK (`app-debug.apk`)** | 13.05 MB (13,681,634 B) | **8.45 MB** (8,447,786 B) | **-38.3%** (-5.23 MB) | Clean debug build |
+| **Release APK (`app-release.apk`)** | 3.56 MB (3,727,818 B) | **2.59 MB** (2,586,741 B) | **-27.3%** (-1.14 MB) | **STRICTLY < 10 MB (PASS)** |
 
 ---
 
@@ -109,7 +109,7 @@ Run the full Robolectric + Espresso JVM regression suite:
 100% of the automated tests pass across 5 suites:
 1. `EditorRegressionTest.kt`: Markdown rendering, malformed input resilience, undo/redo cursor restoration, interactive checkbox toggling, formatting wrap/insert, physical keyboard shortcuts (`Ctrl+B/I/Z/Y`), and live unsaved text sharing.
 2. `SearchAndFolderTest.kt`: FTS4 search ranking (title matches strictly above body matches), exclusion of deleted notes, folder filtering, and note lifecycle.
-3. `SyncOutboxAndMigrationTest.kt`: Non-destructive Room `MIGRATION_2_3` from v2 (100% data preservation, UUID backfilling, legacy table retention) and atomic outbox logging.
+3. `SyncOutboxAndMigrationTest.kt`: Non-destructive Room `MIGRATION_2_3` from v2 (100% data preservation, canonical table recreation stripping obsolete legacy columns, `RoomOpenHelper.onValidateSchema()` validation, UUID backfilling, legacy table retention) and atomic outbox logging.
 4. `BackupAndSecurityTest.kt`: JSON backup round-trip, AES-256-GCM `.enotes` encrypted export/import, conflict safety, and biometric authentication gate.
 5. `PerformanceBenchmarkTest.kt`: Search ranking latency across 1,200 notes (< 100ms) and 5,000-character Markdown rendering benchmark.
 
@@ -121,13 +121,13 @@ Run the full Robolectric + Espresso JVM regression suite:
 ```powershell
 .\gradlew.bat assembleDebug
 ```
-Output: `app/build/outputs/apk/debug/app-debug.apk` (~7.99 MB)
+Output: `app/build/outputs/apk/debug/app-debug.apk` (~8.45 MB)
 
 ### Build Release APK (R8 Code & Resource Shrinking)
 ```powershell
 .\gradlew.bat assembleRelease
 ```
-Output: `app/build/outputs/apk/release/app-release.apk` (**~2.47 MB**)
+Output: `app/build/outputs/apk/release/app-release.apk` (**~2.59 MB**)
 
 ### Install via ADB
 ```powershell

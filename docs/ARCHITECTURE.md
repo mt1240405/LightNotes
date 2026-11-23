@@ -108,17 +108,25 @@ graph TD
 ## 3. Database Architecture & Room v3 Schema
 
 ### 3.1 Migration Strategy (`MIGRATION_2_3`)
-The database transitions from Room v2 to Room v3 non-destructively:
-* **Zero Data Loss:** All existing rows in `notes` and `folders` are preserved with complete titles, contents, timestamps, pinned states, and favorite flags.
-* **Sync-Ready Column Additions:**
-  * `notes`: `global_id TEXT`, `folder_global_id TEXT`, `schema_version INTEGER`, `revision INTEGER`, `deleted_at_utc INTEGER`, `sync_state TEXT`.
-  * `folders`: `global_id TEXT`, `deleted_at_utc INTEGER`, `revision INTEGER`, `sync_state TEXT`.
-* **Backfilling:**
-  * Existing `uuid` values are preserved as `global_id`, or generated via SQLite `hex(randomblob(...))` if null.
-  * Tombstones (`deleted_at_utc`) are populated from `updatedAt` for legacy soft-deleted notes (`isDeleted = 1`).
-  * `folder_global_id` references are resolved from legacy integer `folderId` values.
-* **Legacy Tables Preserved:** Dormant tables (`attachments`, `todo`, `note_tags`, `note_links`) are left intact in SQLite to ensure no legacy data is lost.
-* **Local Outbox Table:** `sync_outbox` table and indices (`syncStatus`, `createdAtUtc`) are created for Stage A offline mutation capture.
+The database transitions from Room v2 to Room v3 non-destructively using a robust **Canonical SQLite Table Recreation** pattern:
+* **Zero Data Loss Guarantee:** 100% of existing rows across `notes` and `folders` are preserved with full fidelity (all titles, contents, timestamps, pinned states, and favorite flags intact).
+* **Canonical Schema Recreation:** Rather than relying on fragile, incremental `ALTER TABLE` statements—which cannot drop columns or modify default value string representations across Android SQLite versions—`MIGRATION_2_3` inspects existing tables dynamically via `PRAGMA table_info` and reconstructs `notes` and `folders` via temporary tables (`notes_temp`, `folders_temp`). This pattern:
+  * Creates clean tables matching Room's compiled schema (`RoomOpenHelper.onValidateSchema()`) with 1:1 precision.
+  * Strips obsolete legacy columns from previous v2 iterations (such as `syncState: Int`).
+  * Normalizes column default values to eliminate SQLite metadata discrepancies (`defaultValue = null` vs `'undefined'`).
+  * Transfers all data safely, gracefully falling back to defaults if optional columns are absent in older builds.
+* **Sync-Ready Column Additions & Backfilling:**
+  * `notes`: `global_id TEXT NOT NULL DEFAULT ''`, `folder_global_id TEXT`, `schema_version INTEGER NOT NULL DEFAULT 1`, `revision INTEGER NOT NULL DEFAULT 1`, `deleted_at_utc INTEGER`, `sync_state TEXT NOT NULL DEFAULT 'LOCAL_ONLY'`.
+  * `folders`: `global_id TEXT NOT NULL DEFAULT ''`, `deleted_at_utc INTEGER`, `revision INTEGER NOT NULL DEFAULT 1`, `sync_state TEXT NOT NULL DEFAULT 'LOCAL_ONLY'`.
+  * Existing `uuid` values are preserved as `global_id`, or generated via SQLite random UUID blobs if missing or empty.
+  * Tombstones (`deleted_at_utc`) are backfilled from `updatedAt` for legacy soft-deleted notes (`isDeleted = 1`).
+  * `folder_global_id` UUID foreign keys are automatically backfilled by querying the associated folder's `global_id`.
+* **Legacy Tables & Index Consistency:**
+  * Dormant legacy tables (`attachments`, `todos`, `note_tags`, `note_links`) are fully retained.
+  * Secondary indices on `note_tags` (`index_note_tags_tag`, `index_note_tags_noteId`) and `note_links` (`index_note_links_sourceNoteId`, `index_note_links_targetTitle`) are explicitly created if absent.
+* **Local Outbox & FTS4 Maintenance:**
+  * `sync_outbox` table and compound indices (`syncStatus`, `createdAtUtc` & `entityId`, `localRevision`) are created for Stage A offline mutation capture.
+  * `notes_fts` FTS4 virtual table is refreshed and repopulated with active non-deleted notes, with content synchronization triggers regenerated in `onPostMigrate()`.
 
 ---
 
@@ -180,7 +188,11 @@ The codebase is backed by a 5-suite Robolectric + Espresso JVM test suite (`app/
    * Folder filtering, note moving, and folder lifecycle.
    * Pinning, favoriting, and soft-delete/restore/empty trash cycles.
 3. **`SyncOutboxAndMigrationTest.kt`:**
-   * Verification of `MIGRATION_2_3` from legacy Room v2: 100% data preservation, UUID backfilling, tombstone backfilling, legacy table retention.
+   * End-to-end verification of `MIGRATION_2_3` from legacy Room v2 schemas via `Room.databaseBuilder(...).addMigrations(...)`:
+     * Verifies that `RoomOpenHelper.onUpgrade()` and `RoomOpenHelper.onValidateSchema()` succeed with 0 warnings or schema mismatch errors.
+     * Guarantees 100% data preservation across active notes, folders, and legacy tables (`attachments`, `todos`, `note_tags`, `note_links`).
+     * Confirms UUID `globalId` backfilling, tombstone derivation, and `folder_global_id` cross-table resolution.
+     * Verifies that Room DAO queries (`getNoteById()`, `getAllFoldersSync()`) operate seamlessly on the migrated database.
    * Atomic `sync_outbox` event logging with persistent `deviceId` and monotonically incrementing revisions.
 4. **`BackupAndSecurityTest.kt`:**
    * Full round-trip validation of portable `lightnotes-backup` v1 JSON schema.
