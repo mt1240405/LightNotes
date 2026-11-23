@@ -25,3 +25,12 @@ interface NoteRepository {
     suspend fun getAllNotesSync(): List<Note>
     suspend fun importNotes(notes: List<Note>, folders: List<Folder>): Int
 }
+
+interface FolderRepository {
+    fun observeAllFolders(): Flow<List<Folder>>
+    suspend fun getAllFoldersSync(): List<Folder>
+    suspend fun getFolderByGlobalId(globalId: String): Folder?
+    suspend fun createFolder(name: String, color: String = "#FFB200"): Folder
+    suspend fun updateFolder(folder: Folder): Folder
+    suspend fun deleteFolder(globalId: String)
+}

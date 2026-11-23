@@ -28,9 +28,12 @@ Default manufacturer note applications (ColorOS Notes, Samsung Notes, Apple Note
 
 * **Instant Note Capture:** Launch directly into an editable text surface with zero layout jumps, zero keyboard flicker, and zero clipped titles.
 * **Non-Blocking Debounced Autosave:** Changes mutate in-memory state immediately, incrementing document revisions and committing to Room in the background (~400ms debounce).
-* **Single Adaptive Chrome:** Minimal, high-clarity top bar (`Back`, `Preview / Edit`, `Share`, `Overflow Menu`) and a single compact formatting bar docked above the IME.
-* **Fast Native Markdown Preview:** Native Markwon rendering without WebViews. Supports headings, bold, italic, strikethrough, bulleted/numbered lists, blockquotes, code blocks, links, and **interactive checklists** (`- [ ]` / `- [x]`).
-* **First-Class Native Sharing (< 100ms):** Reads live in-memory edit buffers immediately without requiring save-and-close. Share as clean plain text or raw `.md` source.
+* **Single Adaptive Chrome & Edge-to-Edge Insets:** Minimal, high-clarity top bar (`Back`, `Preview / Edit`, `Share`, `Overflow Menu`) sitting cleanly below status bar icons via dynamic window insets, and a compact formatting bar docked above the IME with `8dp` padding.
+* **Fast Native Markdown Preview & Interactive Checklists:** Native Markwon rendering without WebViews. Checkbox taps (`- [ ]` / `- [x]`) in preview mode compute touch lines within touch slop, toggle raw Markdown tokens in-place, preserve scroll position, and trigger autosave.
+* **Lightweight `/` Slash Command Popup:** Typing `/` at the start of a line or after a space opens a compact M3 `ListPopupWindow` for instant Markdown inserts (`H1`, `H2`, `To-do`, `Bullet`, `Code`, `Quote`).
+* **Material 3 Primary Menus & Modal Share Sheet:**
+  * **Overflow Menu (`⋮`):** Official M3 `PopupMenu` styled with surface tokens (`Find in note`, `Pin / Unpin`, `Favorite`, `Move to folder`, `Archive`, `Settings`, `Delete` in `#FF453A`).
+  * **Share Sheet (`ShareBottomSheet`):** Official M3 `ModalBottomSheet` with `BottomSheetDragHandleView`, `20dp` rounded corners, and amber `#FFB200` action rows for Plain Text and `.md` source export.
 * **Offline SQLite FTS4 Search:** Fast as-you-type search ranking title matches strictly above body matches, prioritizing pinned and recent notes.
 * **Stage A Sync-Ready Architecture:** 4-layer separation (`App UI`, `Core`, `Storage`, `Platform Services`), Room v3 schema with non-destructive canonical table recreation migration, UUID `globalId` tracking, monotonically increasing document revisions, and transactional `sync_outbox` logging.
 * **Portable Versioned Backup:** Export and import notes with the standard `lightnotes-backup` v1 JSON format or passphrase-protected AES-256-GCM `.enotes` archives.
@@ -145,18 +148,19 @@ LightNotes/
 │   │   ├── main/
 │   │   │   ├── java/com/lightnotes/app/
 │   │   │   │   ├── core/
-│   │   │   │   │   ├── model/         # Portable Domain Models (Note, Folder, SyncState, SyncOutboxEvent)
-│   │   │   │   │   ├── repository/    # NoteRepository & FolderRepository interfaces
+│   │   │   │   │   ├── model/         # Consolidated Models.kt (Note, Folder, SyncState, SyncOutboxEvent)
+│   │   │   │   │   ├── repository/    # Consolidated Repositories.kt (NoteRepository & FolderRepository)
 │   │   │   │   │   └── search/        # Pure Kotlin SearchRanker (title-weighted scoring)
 │   │   │   │   ├── storage/
 │   │   │   │   │   └── repository/    # LocalNoteRepository & LocalFolderRepository (Room + Outbox)
-│   │   │   │   ├── data/              # Room v3 Entities, DAOs, AppDatabase & Migrations
-│   │   │   │   ├── platform/          # DeviceIdentityProvider & PreferencesRepository (DataStore)
+│   │   │   │   ├── data/              # Room v3 Entities, DAOs, AppDatabase & Migrations, PreferencesRepository
+│   │   │   │   ├── platform/          # DeviceIdentityProvider (UUID v4)
 │   │   │   │   ├── markdown/          # Native Markwon MarkdownEngine & Checkbox toggler
 │   │   │   │   ├── editor/            # EditHistoryManager (bounded typing coalescing)
 │   │   │   │   ├── backup/            # BackupService (JSON & AES-GCM) & HeyTapImporter
 │   │   │   │   ├── security/          # BiometricHelper (BiometricPrompt)
-│   │   │   │   └── ui/                # MainActivity, NoteEditorActivity, SettingsActivity, ViewModels
+│   │   │   │   └── ui/                # MainActivity (with inlined FolderTabAdapter), NoteEditorActivity, SettingsActivity, ViewModels
+│   │   │   │       └── dialogs/       # ShareBottomSheet (Material 3 ModalBottomSheet + DragHandle)
 │   │   │   ├── res/                   # Flat ColorOS layout XMLs, vector drawables, OLED dark theme
 │   │   │   └── AndroidManifest.xml
 │   │   └── test/java/com/lightnotes/app/ # 5 Robolectric + Espresso JVM Test Suites

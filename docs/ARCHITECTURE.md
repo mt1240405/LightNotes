@@ -24,10 +24,8 @@ graph TD
     end
 
     subgraph Layer 2: Core Domain & Services
-        NoteModel["Note & Folder Domain Models"]
-        SyncStateEnum["SyncState & SyncOutboxEvent"]
-        NoteRepoInterface["NoteRepository (Interface)"]
-        FolderRepoInterface["FolderRepository (Interface)"]
+        NoteModel["Domain Models (Models.kt: Note, Folder, SyncState, SyncOutboxEvent)"]
+        NoteRepoInterface["Repository Interfaces (Repositories.kt: NoteRepository, FolderRepository)"]
         SearchRanker["SearchRanker (Pure Kotlin Title-Weighted Ranking)"]
         EditHistoryMgr["EditHistoryManager (Bounded Undo/Redo)"]
         MarkdownEng["MarkdownEngine (Native Markwon Core)"]
@@ -47,7 +45,7 @@ graph TD
         DeviceIdentity["DeviceIdentityProvider (UUID v4)"]
         PrefsRepo["PreferencesRepository (Jetpack DataStore)"]
         BiometricHlp["BiometricHelper (BiometricPrompt)"]
-        NativeShare["Native Android ShareSheet (Intent.ACTION_SEND)"]
+        NativeShare["Material 3 ShareBottomSheet & Native Sharesheet"]
     end
 
     MainActivity --> NotesViewModel
@@ -145,13 +143,19 @@ The database transitions from Room v2 to Room v3 non-destructively using a robus
 
 ### 4.3 Native Markdown Preview & Interactive Checklists
 * Pure JVM native Markwon rendering without WebViews.
-* Checkboxes (`- [ ]` / `- [x]`) in preview mode intercept touch events, toggle raw markdown via `MarkdownEngine.toggleTaskItem()`, update the editor in place, preserve scroll position, and trigger background autosave.
+* **Touch-Accurate Checkbox Toggling:** In preview mode, `tvNoteRendered` attaches an `OnTouchListener` that captures `ACTION_DOWN` coordinates and validates tap slop (`distance < scaledTouchSlop`) on `ACTION_UP`.
+* It calculates the tapped character line, verifies that the touch did not hit a link (`URLSpan`), locates the line's `TaskListSpan`, determines its 0-based index among all task spans, flips the corresponding Markdown token (`- [ ]` <-> `- [x]`) in raw Markdown via `MarkdownEngine.toggleTaskItem()`, preserves `NestedScrollView.scrollY`, and dispatches debounced autosave.
 
-### 4.4 Instant Native Sharing (< 100ms)
-* Reads live in-memory edit buffers immediately without requiring disk synchronization.
-* Displays a 2-option ColorOS-styled bottom sheet:
-  * **Share as Plain Text:** Markdown syntax is cleanly stripped while preserving structural readability.
-  * **Share as Markdown:** Raw `.md` source passed with Android's native `Intent.ACTION_SEND` Sharesheet.
+### 4.4 Material 3 Edge-to-Edge Window Insets
+* Edge-to-edge layout is orchestrated via `ViewCompat.setOnApplyWindowInsetsListener`:
+  * **Top Toolbar:** `paddingTop = sysBars.top` ensures the navigation buttons (`Back`, `Toggle Mode`, `Share`, `Overflow Menu`) sit cleanly below the status bar clock and battery icons without layout overlap.
+  * **Bottom Formatting Toolbar:** `paddingBottom = maxOf(sysBars.bottom, ime.bottom)` provides generous clearance above gesture navigation bars when closed, and sits flush with `8dp` padding directly above the keyboard when typing.
+  * **Content ScrollView:** Adjusts bottom padding dynamically between editing mode and full-screen preview mode (`previewBottomPadding = sysBars.bottom`).
+
+### 4.5 Material 3 Primary UI Components & Menus
+* **Overflow Menu (`⋮`):** Official Material 3 `PopupMenu` styled with M3 surface tokens (`?attr/colorSurfaceContainerHigh`, `14dp` rounded corners, `1dp` outline stroke) hosting: `Find in note`, `Pin / Unpin`, `Favorite`, `Move to folder`, `Archive`, `Settings`, and `Delete` (tinted `?attr/colorError` / `#FF453A`).
+* **Modal Share Sheet (`ShareBottomSheet`):** Official Material 3 `BottomSheetDialogFragment` with `BottomSheetDragHandleView`, `?attr/colorSurfaceContainer` background, `20dp` top corners, and `#FFB200` amber action rows for Plain Text and `.md` source export.
+* **Lightweight `/` Slash Command Popup:** Typing `/` at the start of a line or after a space displays a compact M3 `ListPopupWindow` anchored above the bottom toolbar for quick inserts: `H1 Title`, `H2 Subtitle`, `To-do Checkbox`, `Bullet List`, `Code Block`, and `Quote`.
 
 ---
 

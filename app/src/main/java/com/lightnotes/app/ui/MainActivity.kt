@@ -279,3 +279,70 @@ class MainActivity : AppCompatActivity() {
         popup.show()
     }
 }
+
+data class FolderTabItem(
+    val filterType: NotesFilterType,
+    val folderGlobalId: String? = null,
+    val name: String,
+    val count: Int = 0
+)
+
+class FolderTabAdapter(
+    private val onTabSelected: (FolderTabItem) -> Unit
+) : androidx.recyclerview.widget.RecyclerView.Adapter<FolderTabAdapter.TabViewHolder>() {
+
+    private val tabs = mutableListOf<FolderTabItem>()
+    private var selectedPosition = 0
+
+    fun submitTabs(newTabs: List<FolderTabItem>) {
+        tabs.clear()
+        tabs.addAll(newTabs)
+        notifyDataSetChanged()
+    }
+
+    fun setSelectedTab(position: Int) {
+        val prev = selectedPosition
+        selectedPosition = position
+        notifyItemChanged(prev)
+        notifyItemChanged(selectedPosition)
+    }
+
+    override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): TabViewHolder {
+        val binding = com.lightnotes.app.databinding.ItemFolderTabBinding.inflate(
+            android.view.LayoutInflater.from(parent.context), parent, false
+        )
+        return TabViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(holder: TabViewHolder, position: Int) {
+        val item = tabs[position]
+        holder.bind(item, position == selectedPosition)
+    }
+
+    override fun getItemCount(): Int = tabs.size
+
+    inner class TabViewHolder(private val binding: com.lightnotes.app.databinding.ItemFolderTabBinding) :
+        androidx.recyclerview.widget.RecyclerView.ViewHolder(binding.root) {
+
+        fun bind(item: FolderTabItem, isSelected: Boolean) {
+            val context = binding.root.context
+            binding.tvTabName.text = if (item.count > 0) "${item.name} (${item.count})" else item.name
+
+            if (isSelected) {
+                binding.tvTabName.setBackgroundResource(com.lightnotes.app.R.drawable.bg_folder_tab_selected)
+                binding.tvTabName.setTextColor(androidx.core.content.ContextCompat.getColor(context, com.lightnotes.app.R.color.brand_amber))
+            } else {
+                binding.tvTabName.setBackgroundResource(com.lightnotes.app.R.drawable.bg_folder_tab_unselected)
+                binding.tvTabName.setTextColor(androidx.core.content.ContextCompat.getColor(context, com.lightnotes.app.R.color.text_secondary))
+            }
+
+            binding.root.setOnClickListener {
+                val pos = bindingAdapterPosition
+                if (pos != androidx.recyclerview.widget.RecyclerView.NO_POSITION && pos != selectedPosition) {
+                    setSelectedTab(pos)
+                    onTabSelected(item)
+                }
+            }
+        }
+    }
+}

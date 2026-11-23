@@ -3,15 +3,25 @@ package com.lightnotes.app.ui
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.text.Editable
+import android.text.SpannableString
 import android.text.Spanned
 import android.text.TextWatcher
+import android.text.style.ForegroundColorSpan
+import android.text.style.URLSpan
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
+import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
+import android.widget.BaseAdapter
 import android.widget.EditText
+import android.widget.ListPopupWindow
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -20,7 +30,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsAnimationCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -30,7 +39,7 @@ import com.lightnotes.app.core.model.Note
 import com.lightnotes.app.databinding.ActivityNoteEditorBinding
 import com.lightnotes.app.editor.EditHistoryManager
 import com.lightnotes.app.markdown.MarkdownEngine
-import com.lightnotes.app.ui.dialogs.RealmeShareBottomSheet
+import com.lightnotes.app.ui.dialogs.ShareBottomSheet
 import com.lightnotes.app.ui.viewmodel.EditorViewModel
 import io.noties.markwon.ext.tasklist.TaskListSpan
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +76,16 @@ class NoteEditorActivity : AppCompatActivity() {
     // Search inside note
     private val searchMatches = mutableListOf<Int>()
     private var currentSearchIndex = -1
+
+    // Slash command popup
+    private data class SlashCommand(
+        val title: String,
+        val subtitle: String,
+        val badge: String,
+        val prefix: String,
+        val suffix: String = ""
+    )
+    private var slashPopup: ListPopupWindow? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         HighRefreshRateHelper.applyHighRefreshRate(this)
@@ -126,8 +145,11 @@ class NoteEditorActivity : AppCompatActivity() {
         binding.btnUndo.setOnClickListener { editHistoryManager.undo() }
         binding.btnRedo.setOnClickListener { editHistoryManager.redo() }
 
+        // Setup slash command popup
+        setupSlashCommandPopup()
+
         // Content & Title change watchers
-        val textWatcher = object : TextWatcher {
+        val titleWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
@@ -140,8 +162,41 @@ class NoteEditorActivity : AppCompatActivity() {
             }
         }
 
-        binding.etNoteTitle.addTextChangedListener(textWatcher)
-        binding.etNoteContent.addTextChangedListener(textWatcher)
+        val contentWatcher = object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (isPreviewMode) return
+                val text = binding.etNoteContent.text ?: return
+                val pos = binding.etNoteContent.selectionStart
+                if (pos > 0 && text.length >= pos) {
+                    val charBefore = text[pos - 1]
+                    if (charBefore == '/') {
+                        val isStartOfLine = pos == 1 || text[pos - 2] == '\n'
+                        val isAfterSpace = pos > 1 && (text[pos - 2] == ' ' || text[pos - 2] == '\t')
+                        if (isStartOfLine || isAfterSpace) {
+                            if (slashPopup?.isShowing != true) {
+                                slashPopup?.show()
+                            }
+                            return
+                        }
+                    }
+                }
+                if (slashPopup?.isShowing == true) {
+                    slashPopup?.dismiss()
+                }
+            }
+            override fun afterTextChanged(s: Editable?) {
+                if (isUserTyping) {
+                    val title = binding.etNoteTitle.text.toString()
+                    val content = binding.etNoteContent.text.toString()
+                    updateMetadataBar(content)
+                    viewModel.onContentChanged(title, content)
+                }
+            }
+        }
+
+        binding.etNoteTitle.addTextChangedListener(titleWatcher)
+        binding.etNoteContent.addTextChangedListener(contentWatcher)
 
         // Find in note search
         binding.etSearchQuery.addTextChangedListener(object : TextWatcher {
@@ -174,15 +229,36 @@ class NoteEditorActivity : AppCompatActivity() {
 
     private fun initKeyboardInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.editorRoot) { _, insets ->
-            val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
-            val imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-            val sysBarBottom = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
+            val sysBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
 
-            if (!isPreviewMode) {
-                binding.bottomToolbar.visibility = View.VISIBLE
-                val translation = if (imeVisible) -(imeHeight - sysBarBottom).coerceAtLeast(0).toFloat() else 0f
-                binding.bottomToolbar.translationY = translation
-            }
+            // 1. Status bar inset: paddingTop = sysBars.top so toolbar buttons sit cleanly below clock and battery icons
+            binding.editorToolbar.setPadding(
+                binding.editorToolbar.paddingLeft,
+                sysBars.top,
+                binding.editorToolbar.paddingRight,
+                binding.editorToolbar.paddingBottom
+            )
+
+            // 2. Bottom nav/IME inset: paddingBottom = maxOf(sysBars.bottom, ime.bottom) on bottom toolbar
+            val bottomInset = maxOf(sysBars.bottom, ime.bottom)
+            val extraPadding = if (ime.bottom > 0) (8 * resources.displayMetrics.density).toInt() else 0
+            binding.bottomToolbar.setPadding(
+                binding.bottomToolbar.paddingLeft,
+                binding.bottomToolbar.paddingTop,
+                binding.bottomToolbar.paddingRight,
+                bottomInset + extraPadding
+            )
+
+            // 3. Scroll view bottom padding clears the nav bar in preview mode
+            val previewBottomPadding = if (isPreviewMode) sysBars.bottom else 0
+            binding.scrollView.setPadding(
+                binding.scrollView.paddingLeft,
+                binding.scrollView.paddingTop,
+                binding.scrollView.paddingRight,
+                previewBottomPadding + (24 * resources.displayMetrics.density).toInt()
+            )
+
             insets
         }
     }
@@ -274,6 +350,7 @@ class NoteEditorActivity : AppCompatActivity() {
 
             binding.etNoteContent.requestFocus()
         }
+        ViewCompat.requestApplyInsets(binding.editorRoot)
     }
 
     private fun renderMarkdownPreview() {
@@ -290,37 +367,125 @@ class NoteEditorActivity : AppCompatActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupPreviewCheckboxToggle() {
-        binding.tvNoteRendered.setOnTouchListener { v, event ->
-            if (event.action == MotionEvent.ACTION_UP) {
-                val tv = binding.tvNoteRendered
-                val x = event.x.toInt() - tv.totalPaddingLeft + tv.scrollX
-                val y = event.y.toInt() - tv.totalPaddingTop + tv.scrollY
-                val layout = tv.layout ?: return@setOnTouchListener false
-                val line = layout.getLineForVertical(y)
-                val lineStart = layout.getLineStart(line)
-                val lineEnd = layout.getLineEnd(line)
+        var downX = 0f
+        var downY = 0f
 
-                val spanned = tv.text as? Spanned
-                val taskSpans = spanned?.getSpans(lineStart, lineEnd, TaskListSpan::class.java)
-                if (!taskSpans.isNullOrEmpty()) {
-                    // Find which task list item index was clicked
-                    val allTaskSpans = spanned.getSpans(0, spanned.length, TaskListSpan::class.java)
-                    val clickedSpan = taskSpans.first()
-                    val targetIndex = allTaskSpans.indexOf(clickedSpan)
-                    if (targetIndex >= 0) {
-                        val currentText = binding.etNoteContent.text.toString()
-                        val updated = MarkdownEngine.toggleTaskItem(currentText, targetIndex)
-                        if (updated != currentText) {
-                            binding.etNoteContent.setText(updated)
-                            renderMarkdownPreview()
-                            val title = binding.etNoteTitle.text.toString()
-                            viewModel.onContentChanged(title, updated)
-                            return@setOnTouchListener true
+        binding.tvNoteRendered.setOnTouchListener { v, event ->
+            val tv = binding.tvNoteRendered
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downX = event.x
+                    downY = event.y
+                    true
+                }
+                MotionEvent.ACTION_UP -> {
+                    val dx = event.x - downX
+                    val dy = event.y - downY
+                    val distance = Math.hypot(dx.toDouble(), dy.toDouble())
+                    val touchSlop = ViewConfiguration.get(tv.context).scaledTouchSlop
+
+                    if (distance < touchSlop) {
+                        val x = event.x.toInt() - tv.totalPaddingLeft + tv.scrollX
+                        val y = event.y.toInt() - tv.totalPaddingTop + tv.scrollY
+                        val layout = tv.layout
+                        if (layout != null) {
+                            val line = layout.getLineForVertical(y)
+                            val lineStart = layout.getLineStart(line)
+                            val lineEnd = layout.getLineEnd(line)
+
+                            val spanned = tv.text as? Spanned
+                            if (spanned != null) {
+                                val offset = layout.getOffsetForHorizontal(line, x.toFloat())
+                                val urlSpans = spanned.getSpans(offset, offset, URLSpan::class.java)
+                                if (urlSpans.isNullOrEmpty()) {
+                                    val lineTaskSpans = spanned.getSpans(lineStart, lineEnd, TaskListSpan::class.java)
+                                    if (!lineTaskSpans.isNullOrEmpty()) {
+                                        val allTaskSpans = spanned.getSpans(0, spanned.length, TaskListSpan::class.java)
+                                            .sortedBy { spanned.getSpanStart(it) }
+                                        val targetSpan = lineTaskSpans.minByOrNull { spanned.getSpanStart(it) }!!
+                                        val targetIndex = allTaskSpans.indexOf(targetSpan)
+
+                                        if (targetIndex >= 0) {
+                                            val currentText = binding.etNoteContent.text.toString()
+                                            val updated = MarkdownEngine.toggleTaskItem(currentText, targetIndex)
+                                            if (updated != currentText) {
+                                                val savedScrollY = binding.scrollView.scrollY
+                                                binding.etNoteContent.setText(updated)
+                                                renderMarkdownPreview()
+                                                binding.scrollView.post {
+                                                    binding.scrollView.scrollY = savedScrollY
+                                                }
+                                                val title = binding.etNoteTitle.text.toString()
+                                                viewModel.onContentChanged(title, updated)
+                                                return@setOnTouchListener true
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    urlSpans.first().onClick(tv)
+                                    return@setOnTouchListener true
+                                }
+                            }
                         }
                     }
+                    v.performClick()
+                    false
+                }
+                MotionEvent.ACTION_CANCEL -> false
+                else -> false
+            }
+        }
+    }
+
+    private fun setupSlashCommandPopup() {
+        val commands = listOf(
+            SlashCommand("H1 Title", "Big section heading", "#", "# "),
+            SlashCommand("H2 Subtitle", "Medium subsection heading", "##", "## "),
+            SlashCommand("To-do Checkbox", "Interactive task checklist item", "[ ]", "- [ ] "),
+            SlashCommand("Bullet List", "Unordered bulleted point", "•", "- "),
+            SlashCommand("Code Block", "Fenced code block", "</>", "```\n", "\n```"),
+            SlashCommand("Quote", "Blockquote / excerpt", "”", "> ")
+        )
+
+        val popup = ListPopupWindow(this).apply {
+            anchorView = binding.bottomToolbar
+            isModal = false
+            setBackgroundDrawable(ContextCompat.getDrawable(this@NoteEditorActivity, R.drawable.bg_m3_popup_surface))
+            width = (240 * resources.displayMetrics.density).toInt()
+            height = ListPopupWindow.WRAP_CONTENT
+
+            val adapter = object : BaseAdapter() {
+                override fun getCount(): Int = commands.size
+                override fun getItem(position: Int): Any = commands[position]
+                override fun getItemId(position: Int): Long = position.toLong()
+                override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                    val view = convertView ?: layoutInflater.inflate(R.layout.item_slash_command, parent, false)
+                    val item = commands[position]
+                    view.findViewById<TextView>(R.id.tvCommandBadge).text = item.badge
+                    view.findViewById<TextView>(R.id.tvCommandTitle).text = item.title
+                    view.findViewById<TextView>(R.id.tvCommandSubtitle).text = item.subtitle
+                    return view
                 }
             }
-            false
+
+            setAdapter(adapter)
+
+            setOnItemClickListener { _, _, position, _ ->
+                val cmd = commands[position]
+                applySlashCommand(cmd)
+                dismiss()
+            }
+        }
+        slashPopup = popup
+    }
+
+    private fun applySlashCommand(cmd: SlashCommand) {
+        val text = binding.etNoteContent.text ?: return
+        val pos = binding.etNoteContent.selectionStart
+        if (pos > 0 && text.length >= pos && text[pos - 1] == '/') {
+            val replacement = "${cmd.prefix}${cmd.suffix}"
+            text.replace(pos - 1, pos, replacement)
+            binding.etNoteContent.setSelection(pos - 1 + cmd.prefix.length)
         }
     }
 
@@ -384,35 +549,39 @@ class NoteEditorActivity : AppCompatActivity() {
     private fun openShareSheet() {
         val title = binding.etNoteTitle.text.toString()
         val content = binding.etNoteContent.text.toString()
-        val sheet = RealmeShareBottomSheet.newInstance(title, content)
-        sheet.show(supportFragmentManager, "RealmeShareBottomSheet")
+        val sheet = ShareBottomSheet.newInstance(title, content)
+        sheet.show(supportFragmentManager, "ShareBottomSheet")
     }
 
     private fun showOverflowMenu() {
-        val popup = PopupMenu(this, binding.btnOverflowMenu)
+        val popup = PopupMenu(this, binding.btnOverflowMenu, Gravity.END)
         popup.menu.apply {
-            add(0, 1, 0, if (isPinned) "Unpin Note" else "Pin Note")
-            add(0, 2, 1, if (isFavorite) "Remove from Favorites" else "Add to Favorites")
-            add(0, 3, 2, "Move to Folder...")
-            add(0, 4, 3, "Find in Note")
-            add(0, 5, 4, "Archive Note")
-            add(0, 6, 5, "Delete Note")
+            add(0, 1, 0, "Find in note")
+            add(0, 2, 1, if (isPinned) "Unpin note" else "Pin note")
+            add(0, 3, 2, if (isFavorite) "Remove from favorites" else "Add to favorites")
+            add(0, 4, 3, "Move to folder...")
+            add(0, 5, 4, if (isArchived) "Unarchive note" else "Archive note")
+            add(0, 6, 5, "Settings")
+            val deleteTitle = SpannableString("Delete note").apply {
+                setSpan(ForegroundColorSpan(Color.parseColor("#FF453A")), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+            add(0, 7, 6, deleteTitle)
         }
 
         popup.setOnMenuItemClickListener { item ->
             val title = binding.etNoteTitle.text.toString()
             val content = binding.etNoteContent.text.toString()
             when (item.itemId) {
-                1 -> togglePinState()
-                2 -> {
-                    isFavorite = !isFavorite
-                    viewModel.toggleFavorite(title, content)
-                }
-                3 -> showMoveToFolderDialog(title, content)
-                4 -> {
+                1 -> {
                     binding.layoutSearchBar.visibility = View.VISIBLE
                     binding.etSearchQuery.requestFocus()
                 }
+                2 -> togglePinState()
+                3 -> {
+                    isFavorite = !isFavorite
+                    viewModel.toggleFavorite(title, content)
+                }
+                4 -> showMoveToFolderDialog(title, content)
                 5 -> {
                     viewModel.archiveNote(title, content) {
                         Toast.makeText(this, "Note archived", Toast.LENGTH_SHORT).show()
@@ -420,6 +589,9 @@ class NoteEditorActivity : AppCompatActivity() {
                     }
                 }
                 6 -> {
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                }
+                7 -> {
                     viewModel.moveToTrash(title, content) {
                         Toast.makeText(this, "Note moved to trash", Toast.LENGTH_SHORT).show()
                         finish()
@@ -507,6 +679,8 @@ class NoteEditorActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        slashPopup?.dismiss()
+        slashPopup = null
         hideKeyboard()
     }
 }

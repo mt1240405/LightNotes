@@ -25,6 +25,13 @@
         
         <!-- M3 BottomSheetDialog Style -->
         <item name="bottomSheetDialogTheme">@style/ThemeOverlay.LightNotes.BottomSheetDialog</item>
+
+        <!-- M3 PopupMenu Style -->
+        <item name="popupMenuStyle">@style/Widget.LightNotes.PopupMenu</item>
+    </style>
+
+    <style name="Widget.LightNotes.PopupMenu" parent="Widget.Material3.PopupMenu">
+        <item name="android:popupBackground">@drawable/bg_m3_popup_surface</item>
     </style>
 
     <style name="ThemeOverlay.LightNotes.BottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
@@ -37,8 +44,8 @@
     </style>
 
     <style name="ShapeAppearance.LightNotes.BottomSheet" parent="ShapeAppearance.Material3.Corner.Medium">
-        <item name="cornerSizeTopLeft">16dp</item>
-        <item name="cornerSizeTopRight">16dp</item>
+        <item name="cornerSizeTopLeft">20dp</item>
+        <item name="cornerSizeTopRight">20dp</item>
         <item name="cornerSizeBottomLeft">0dp</item>
         <item name="cornerSizeBottomRight">0dp</item>
     </style>

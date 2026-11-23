@@ -8,12 +8,12 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.lightnotes.app.databinding.BottomSheetRealmeShareBinding
+import com.lightnotes.app.databinding.BottomSheetShareBinding
 import java.io.File
 
-class RealmeShareBottomSheet : BottomSheetDialogFragment() {
+class ShareBottomSheet : BottomSheetDialogFragment() {
 
-    private var _binding: BottomSheetRealmeShareBinding? = null
+    private var _binding: BottomSheetShareBinding? = null
     private val binding get() = _binding!!
 
     private var noteTitle: String = ""
@@ -24,7 +24,7 @@ class RealmeShareBottomSheet : BottomSheetDialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = BottomSheetRealmeShareBinding.inflate(inflater, container, false)
+        _binding = BottomSheetShareBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -38,6 +38,10 @@ class RealmeShareBottomSheet : BottomSheetDialogFragment() {
 
         binding.btnShareMarkdown.setOnClickListener {
             shareAsMarkdown()
+            dismiss()
+        }
+
+        binding.btnCancel.setOnClickListener {
             dismiss()
         }
     }
@@ -102,29 +106,20 @@ class RealmeShareBottomSheet : BottomSheetDialogFragment() {
 
     private fun stripMarkdown(markdown: String): String {
         var text = markdown
-        // Code blocks
         text = text.replace(Regex("```[a-zA-Z0-9_-]*\n?"), "")
-        // Inline code
         text = text.replace(Regex("`([^`]+)`"), "$1")
-        // Bold & Italic & Strikethrough
         text = text.replace(Regex("\\*\\*\\*(.*?)\\*\\*\\*"), "$1")
         text = text.replace(Regex("\\*\\*(.*?)\\*\\*"), "$1")
         text = text.replace(Regex("__(.*?)__"), "$1")
         text = text.replace(Regex("\\*(.*?)\\*"), "$1")
         text = text.replace(Regex("_(.*?)_"), "$1")
         text = text.replace(Regex("~~(.*?)~~"), "$1")
-        // Headings
         text = text.replace(Regex("(?m)^#{1,6}\\s+"), "")
-        // Links
         text = text.replace(Regex("\\[([^\\]]+)\\]\\(([^)]+)\\)"), "$1 ($2)")
-        // Checklists
         text = text.replace(Regex("(?m)^\\s*[-*+]\\s+\\[ \\]\\s*"), "☐ ")
         text = text.replace(Regex("(?m)^\\s*[-*+]\\s+\\[[xX]\\]\\s*"), "☑ ")
-        // Bullet points
         text = text.replace(Regex("(?m)^\\s*[-*+]\\s+"), "• ")
-        // Blockquotes
         text = text.replace(Regex("(?m)^>\\s*"), "")
-        // Horizontal rules
         text = text.replace(Regex("(?m)^[-*_]{3,}\\s*$"), "")
         return text.trim()
     }
@@ -140,10 +135,13 @@ class RealmeShareBottomSheet : BottomSheetDialogFragment() {
     }
 
     companion object {
-        fun newInstance(title: String, content: String): RealmeShareBottomSheet {
-            return RealmeShareBottomSheet().apply {
+        fun newInstance(title: String, content: String): ShareBottomSheet {
+            return ShareBottomSheet().apply {
                 setLiveContent(title, content)
             }
         }
     }
 }
+
+/** Backwards compatibility alias */
+typealias RealmeShareBottomSheet = ShareBottomSheet
