@@ -70,10 +70,41 @@ class SyncOutboxAndMigrationTest {
         """)
 
         // Legacy tables that must NOT be dropped
-        sqlite.execSQL("CREATE TABLE attachments (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, noteId INTEGER NOT NULL, uri TEXT NOT NULL)")
-        sqlite.execSQL("CREATE TABLE todo (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, noteId INTEGER NOT NULL, text TEXT NOT NULL, isDone INTEGER NOT NULL)")
-        sqlite.execSQL("CREATE TABLE note_tags (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, noteId INTEGER NOT NULL, tag TEXT NOT NULL)")
-        sqlite.execSQL("CREATE TABLE note_links (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, sourceNoteId INTEGER NOT NULL, targetTitle TEXT NOT NULL, targetNoteId INTEGER)")
+        sqlite.execSQL("""
+            CREATE TABLE attachments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                noteId INTEGER NOT NULL,
+                filePath TEXT NOT NULL,
+                mimeType TEXT NOT NULL,
+                fileName TEXT NOT NULL,
+                fileSize INTEGER NOT NULL,
+                createdAt INTEGER NOT NULL
+            )
+        """.trimIndent())
+        sqlite.execSQL("""
+            CREATE TABLE todos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                noteId INTEGER NOT NULL,
+                taskText TEXT NOT NULL,
+                isDone INTEGER NOT NULL,
+                orderIndex INTEGER NOT NULL
+            )
+        """.trimIndent())
+        sqlite.execSQL("""
+            CREATE TABLE note_tags (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                noteId INTEGER NOT NULL,
+                tag TEXT NOT NULL
+            )
+        """.trimIndent())
+        sqlite.execSQL("""
+            CREATE TABLE note_links (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                sourceNoteId INTEGER NOT NULL,
+                targetTitle TEXT NOT NULL,
+                targetNoteId INTEGER
+            )
+        """.trimIndent())
 
         // Insert mock v2 records
         sqlite.execSQL("""
@@ -91,27 +122,23 @@ class SyncOutboxAndMigrationTest {
             VALUES (11, 'legacy-uuid-11', 'Deleted Note', 'Deleted content', 'Preview', NULL, 0, 0, 0, 1, 0, 0, '', 1700001000, 1700006000, NULL, '', 0)
         """)
 
-        sqlite.execSQL("INSERT INTO attachments (id, noteId, uri) VALUES (1, 10, 'file:///data/mock.png')")
+        sqlite.execSQL("INSERT INTO attachments (id, noteId, filePath, mimeType, fileName, fileSize, createdAt) VALUES (1, 10, 'file:///data/mock.png', 'image/png', 'mock.png', 1024, 1700000000)")
         sqlite.version = 2
         sqlite.close()
 
-        // 2. Open with SupportSQLiteOpenHelper to run MIGRATION_2_3
-        val config = SupportSQLiteOpenHelper.Configuration.builder(context)
-            .name("migration_test.db")
-            .callback(object : SupportSQLiteOpenHelper.Callback(3) {
-                override fun onCreate(db: SupportSQLiteDatabase) {}
-                override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) {
-                    if (oldVersion < 3) {
-                        AppDatabase.MIGRATION_2_3.migrate(db)
-                    }
-                }
-            })
-            .build()
+        // 2. Open with actual Room Database to run MIGRATION_2_3 and validate Room schema matching
+        val roomDb = androidx.room.Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "migration_test.db"
+        )
+        .addMigrations(AppDatabase.MIGRATION_1_2, AppDatabase.MIGRATION_2_3)
+        .build()
 
-        val helper = FrameworkSQLiteOpenHelperFactory().create(config)
-        val migratedDb = helper.writableDatabase
+        // 3. Verify RoomOpenHelper onUpgrade & onValidateSchema succeeded without exception
+        val migratedDb = roomDb.openHelper.writableDatabase
 
-        // 3. Verify V2 data preservation and V3 backfills
+        // 4. Verify V2 data preservation and V3 backfills
         val cursorNotes = migratedDb.query("SELECT id, global_id, folder_global_id, revision, deleted_at_utc, isPinned, isFavorite FROM notes WHERE id = 10")
         assertTrue(cursorNotes.moveToFirst())
         assertEquals(10L, cursorNotes.getLong(0))
@@ -141,7 +168,19 @@ class SyncOutboxAndMigrationTest {
         assertEquals(0, cursorOutbox.getInt(0))
         cursorOutbox.close()
 
-        migratedDb.close()
+        // Verify DAO queries work seamlessly on migrated DB
+        runBlocking {
+            val note10 = roomDb.noteDao().getNoteById(10L)
+            assertNotNull(note10)
+            assertEquals("System Architecture", note10?.title)
+
+            val foldersList = roomDb.folderDao().getAllFoldersSync()
+            assertEquals(1, foldersList.size)
+            assertEquals("Engineering", foldersList[0].name)
+            assertNotNull(foldersList[0].globalId)
+        }
+
+        roomDb.close()
     }
 
     @Test
