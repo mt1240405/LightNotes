@@ -1,6 +1,6 @@
 # LightNotes Technical Architecture & System Design
 
-**LightNotes** (`com.lightnotes.app`) is an offline-first, high-performance Technical Notebook and Developer Scratchpad for Android (minSdk 26, targetSdk 35, compileSdk 35). It is engineered in 100% Kotlin/JVM and C++17 NDK (zero Rust/Cargo, zero embedded Chromium runtimes), following modern Material 3 Expressive and ColorOS/Realme flat styling principles (1dp hairlines, 6dp–12dp radii, no pill buttons, no heavy gradients, pure OLED `#000000` dark mode).
+**LightNotes** (`com.lightnotes.app`) is an offline-first, high-performance Technical Notebook and Developer Scratchpad for Android (minSdk 26, targetSdk 35, compileSdk 35), engineered as an ultra-lightweight alternative to resource-heavy default phone note apps and sluggish WebView containers. It is built in 100% Kotlin/JVM and C++17 NDK (zero Rust/Cargo, zero embedded Chromium runtimes), following modern Material 3 Expressive and ColorOS/Realme flat styling principles (1dp hairlines, 6dp–12dp radii, no pill buttons, no heavy gradients, pure OLED `#000000` dark mode).
 
 > [!NOTE]
 > This document is also available at [ARCHITECTURE.md](file:///c:/Users/tanma/Downloads/rea-sandbox/LightNotes/ARCHITECTURE.md) at the repository root.
