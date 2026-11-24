@@ -3,6 +3,7 @@ package com.lightnotes.app.ui
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -21,6 +22,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.BaseAdapter
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.ListPopupWindow
 import android.widget.TextView
 import android.widget.Toast
@@ -46,6 +48,8 @@ import com.lightnotes.app.data.PreferencesRepository
 import com.lightnotes.app.databinding.ActivityNoteEditorBinding
 import com.lightnotes.app.editor.EditHistoryManager
 import com.lightnotes.app.markdown.MarkdownEngine
+import com.lightnotes.app.markdown.MarkdownSegment
+import com.lightnotes.app.markdown.MarkdownTableHelper
 import com.lightnotes.app.ui.dialogs.ShareBottomSheet
 import com.lightnotes.app.ui.viewmodel.EditorViewModel
 import io.noties.markwon.ext.tasklist.TaskListSpan
@@ -390,7 +394,7 @@ class NoteEditorActivity : AppCompatActivity() {
         if (isPreviewMode) {
             hideKeyboard()
             binding.etNoteContent.visibility = View.GONE
-            binding.tvNoteRendered.visibility = View.VISIBLE
+            binding.layoutPreviewContainer.visibility = View.VISIBLE
             binding.bottomToolbar.visibility = View.GONE
 
             binding.btnToggleMode.text = getString(R.string.edit_label)
@@ -398,7 +402,7 @@ class NoteEditorActivity : AppCompatActivity() {
 
             renderMarkdownPreview()
         } else {
-            binding.tvNoteRendered.visibility = View.GONE
+            binding.layoutPreviewContainer.visibility = View.GONE
             binding.etNoteContent.visibility = View.VISIBLE
             binding.bottomToolbar.visibility = View.VISIBLE
 
@@ -413,22 +417,70 @@ class NoteEditorActivity : AppCompatActivity() {
     private fun renderMarkdownPreview() {
         val content = binding.etNoteContent.text.toString()
         val currentRev = viewModel.documentRevision.value
-        lifecycleScope.launch {
-            val spanned = markdownEngine.parseMarkdownAsync(content)
-            if (currentRev >= renderedRevision) {
-                renderedRevision = currentRev
-                binding.tvNoteRendered.text = spanned
+        val isNight = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val segments = MarkdownTableHelper.parseSegments(content)
+        val hasTable = segments.any { it is MarkdownSegment.Table }
+
+        while (binding.layoutPreviewContainer.childCount > 1) {
+            binding.layoutPreviewContainer.removeViewAt(1)
+        }
+
+        if (!hasTable) {
+            binding.tvNoteRendered.visibility = View.VISIBLE
+            lifecycleScope.launch {
+                val spanned = markdownEngine.parseMarkdownAsync(content)
+                if (currentRev >= renderedRevision) {
+                    renderedRevision = currentRev
+                    binding.tvNoteRendered.text = spanned
+                    attachPreviewCheckboxTouchListener(binding.tvNoteRendered, 0)
+                }
+            }
+        } else {
+            binding.tvNoteRendered.visibility = View.GONE
+            renderedRevision = currentRev
+            segments.forEach { segment ->
+                when (segment) {
+                    is MarkdownSegment.Prose -> {
+                        if (segment.text.isNotBlank() || segments.size == 1) {
+                            val tv = TextView(this).apply {
+                                layoutParams = LinearLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.WRAP_CONTENT
+                                )
+                                textSize = 16f
+                                setLineSpacing(0f, 1.4f)
+                                setTextColor(ContextCompat.getColor(this@NoteEditorActivity, R.color.text_primary))
+                            }
+                            markdownEngine.render(tv, segment.text)
+                            attachPreviewCheckboxTouchListener(tv, segment.checkboxOffset)
+                            binding.layoutPreviewContainer.addView(tv)
+                        }
+                    }
+                    is MarkdownSegment.Table -> {
+                        val tableScrollView = MarkdownTableHelper.createTableScrollView(
+                            this,
+                            segment.table,
+                            markdownEngine.markwon,
+                            isNight
+                        )
+                        binding.layoutPreviewContainer.addView(tableScrollView)
+                    }
+                }
             }
         }
     }
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupPreviewCheckboxToggle() {
+        attachPreviewCheckboxTouchListener(binding.tvNoteRendered, 0)
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun attachPreviewCheckboxTouchListener(tv: TextView, checkboxOffset: Int) {
         var downX = 0f
         var downY = 0f
 
-        binding.tvNoteRendered.setOnTouchListener { v, event ->
-            val tv = binding.tvNoteRendered
+        tv.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     downX = event.x
@@ -460,10 +512,11 @@ class NoteEditorActivity : AppCompatActivity() {
                                         val allTaskSpans = spanned.getSpans(0, spanned.length, TaskListSpan::class.java)
                                             .sortedBy { spanned.getSpanStart(it) }
                                         val targetSpan = lineTaskSpans.minByOrNull { spanned.getSpanStart(it) }!!
-                                        val targetIndex = allTaskSpans.indexOf(targetSpan)
+                                        val localIndex = allTaskSpans.indexOf(targetSpan)
 
-                                        if (targetIndex >= 0) {
+                                        if (localIndex >= 0) {
                                             val currentText = binding.etNoteContent.text.toString()
+                                            val targetIndex = checkboxOffset + localIndex
                                             val updated = MarkdownEngine.toggleTaskItem(currentText, targetIndex)
                                             if (updated != currentText) {
                                                 val savedScrollY = binding.scrollView.scrollY

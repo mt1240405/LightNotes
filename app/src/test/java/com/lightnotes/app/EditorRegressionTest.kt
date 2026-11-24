@@ -6,7 +6,11 @@ import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import com.lightnotes.app.editor.EditHistoryManager
+import com.lightnotes.app.export.PdfExportHelper
 import com.lightnotes.app.markdown.MarkdownEngine
+import com.lightnotes.app.markdown.MarkdownSegment
+import com.lightnotes.app.markdown.MarkdownTableHelper
+import com.lightnotes.app.markdown.TableBlock
 import com.lightnotes.app.ui.NoteEditorActivity
 import com.lightnotes.app.ui.dialogs.RealmeShareBottomSheet
 import org.junit.Assert.assertEquals
@@ -19,7 +23,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], shadows = [ShadowPdfDocument::class])
 class EditorRegressionTest {
 
     @Test
@@ -199,5 +203,146 @@ class EditorRegressionTest {
             assertNotNull(shareSheet)
         }
         scenario.close()
+    }
+
+    @Test
+    fun testMarkdownTableHelperMultiLineAndUnevenColumns() {
+        val markdown = """
+            # Project Plan
+            Here is the progress table:
+            | Feature | Details | Status |
+            | --- | --- | --- |
+            | Database Migration | Room v2 to v3<br>With sync_outbox | Complete<br/>Verified |
+            | Short Row | Missing third col |
+            | Overflow Row | Col 2 | Col 3 | Extra Col 4 |
+            | Autolink Row | Check doc at <https://github.com/project> | Done |
+            
+            - [ ] First checkbox after table
+            - [x] Second checkbox after table
+        """.trimIndent()
+
+        val segments = MarkdownTableHelper.parseSegments(markdown)
+        assertEquals(3, segments.size)
+
+        // Segment 0: Prose before table
+        assertTrue(segments[0] is MarkdownSegment.Prose)
+        val prose0 = segments[0] as MarkdownSegment.Prose
+        assertTrue(prose0.text.contains("# Project Plan"))
+        assertEquals(0, prose0.checkboxOffset)
+
+        // Segment 1: Table
+        assertTrue(segments[1] is MarkdownSegment.Table)
+        val tableSegment = segments[1] as MarkdownSegment.Table
+        val table = tableSegment.table
+        assertEquals(listOf("Feature", "Details", "Status"), table.headers)
+        assertEquals(4, table.rows.size)
+
+        // Row 0: <br> and <br/> normalized to \n
+        assertEquals("Database Migration", table.rows[0][0])
+        assertEquals("Room v2 to v3\nWith sync_outbox", table.rows[0][1])
+        assertEquals("Complete\nVerified", table.rows[0][2])
+
+        // Row 1: Short row padded with empty string to match 3 columns
+        assertEquals(3, table.rows[1].size)
+        assertEquals("Short Row", table.rows[1][0])
+        assertEquals("Missing third col", table.rows[1][1])
+        assertEquals("", table.rows[1][2])
+
+        // Row 2: Overflow row trimmed to match 3 columns
+        assertEquals(3, table.rows[2].size)
+        assertEquals("Overflow Row", table.rows[2][0])
+        assertEquals("Col 2", table.rows[2][1])
+        assertEquals("Col 3", table.rows[2][2])
+
+        // Row 3: Autolink normalized to standard markdown link
+        assertEquals(3, table.rows[3].size)
+        assertEquals("Autolink Row", table.rows[3][0])
+        assertEquals("Check doc at [https://github.com/project](https://github.com/project)", table.rows[3][1])
+        assertEquals("Done", table.rows[3][2])
+
+        // Segment 2: Prose after table with 0 checkboxes before it
+        assertTrue(segments[2] is MarkdownSegment.Prose)
+        val prose1 = segments[2] as MarkdownSegment.Prose
+        assertEquals(0, prose1.checkboxOffset)
+        assertEquals(2, MarkdownTableHelper.countCheckboxes(prose1.text))
+    }
+
+    @Test
+    fun testPdfExportGeneratesValidPdfFromRichMarkdown() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val outputFile = java.io.File(context.cacheDir, "test_export.pdf")
+        if (outputFile.exists()) outputFile.delete()
+
+        val title = "Comprehensive Architecture Note"
+        val content = """
+            # High-Level Architecture
+            This is **bold** text and *italic* text with an [Architecture Link](https://lightnotes.app).
+            
+            ## Task Checklist
+            - [ ] Phase 1: Database Migration
+            - [x] Phase 2: Material 3 UI Reset
+            
+            ## Code Block Example
+            ```kotlin
+            fun syncNotes(cursor: Long): List<Note> {
+                return outboxDao.getPendingEvents()
+            }
+            ```
+            
+            ## Feature Matrix Table
+            | Feature | Version | Status |
+            | --- | --- | --- |
+            | Room v3 Migration | 1.1.0 | Complete<br>Tested |
+            | TableLayout | 1.1.0 | Native Wrap |
+            | PDF Full Markdown | 1.1.0 | Valid %PDF- |
+            
+            > Local-first now. Sync-ready by design. Cloud when needed.
+        """.trimIndent()
+
+        PdfExportHelper.exportNoteToPdf(
+            context = context,
+            title = title,
+            content = content,
+            outputFile = outputFile,
+            dateStr = "24/11/2026, 7:00 PM",
+            wordCount = 75,
+            folderName = "Engineering"
+        )
+
+        assertTrue("Output PDF file must exist", outputFile.exists())
+        assertTrue("Output PDF file size must be > 0", outputFile.length() > 0)
+
+        // Verify PDF Header signature (%PDF-)
+        val bytes = outputFile.readBytes()
+        val header = String(bytes.take(5).toByteArray(), Charsets.US_ASCII)
+        assertEquals("%PDF-", header)
+    }
+
+    @Test
+    fun testTableLayoutCreationWithStyling() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val markdownEngine = MarkdownEngine.getInstance(context)
+        val table = TableBlock(
+            headers = listOf("Col A", "Col B"),
+            rows = listOf(
+                listOf("Val 1", "Val 2"),
+                listOf("Val 3", "Val 4")
+            )
+        )
+
+        val tableLayout = MarkdownTableHelper.createTableLayout(
+            context = context,
+            table = table,
+            markwon = markdownEngine.markwon,
+            isNight = true,
+            isPrint = false
+        )
+
+        assertNotNull(tableLayout)
+        assertEquals(3, tableLayout.childCount) // 1 header row + 2 data rows
+        val headerRow = tableLayout.getChildAt(0) as android.widget.TableRow
+        assertEquals(2, headerRow.childCount)
+        val cell0 = headerRow.getChildAt(0) as TextView
+        assertEquals("Col A", cell0.text.toString().trim())
     }
 }

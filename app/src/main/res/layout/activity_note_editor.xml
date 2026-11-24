@@ -249,16 +249,24 @@
                     android:textColorHint="@color/text_hint"
                     android:textSize="16sp" />
 
-                <!-- Native Markwon Rendered TextView -->
-                <TextView
-                    android:id="@+id/tvNoteRendered"
+                <!-- Native Preview Container: supports single TextView or alternating prose & native TableLayouts -->
+                <LinearLayout
+                    android:id="@+id/layoutPreviewContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="320dp"
-                    android:lineSpacingMultiplier="1.4"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:visibility="gone" />
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <!-- Default Native Markwon Rendered TextView -->
+                    <TextView
+                        android:id="@+id/tvNoteRendered"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="320dp"
+                        android:lineSpacingMultiplier="1.4"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp" />
+                </LinearLayout>
             </FrameLayout>
 
         </LinearLayout>

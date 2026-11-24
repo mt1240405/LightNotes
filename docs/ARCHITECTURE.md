@@ -141,10 +141,16 @@ The database transitions from Room v2 to Room v3 non-destructively using a robus
 * Retains exact cursor and selection positions across undo/redo actions.
 * Hard cap of 100 snapshots, gracefully dropping the oldest entry when bounded capacity is reached.
 
-### 4.3 Native Markdown Preview & Interactive Checklists
+### 4.3 Native Markdown Preview, Tables & Interactive Checklists
 * Pure JVM native Markwon rendering without WebViews.
-* **Touch-Accurate Checkbox Toggling:** In preview mode, `tvNoteRendered` attaches an `OnTouchListener` that captures `ACTION_DOWN` coordinates and validates tap slop (`distance < scaledTouchSlop`) on `ACTION_UP`.
-* It calculates the tapped character line, verifies that the touch did not hit a link (`URLSpan`), locates the line's `TaskListSpan`, determines its 0-based index among all task spans, flips the corresponding Markdown token (`- [ ]` <-> `- [x]`) in raw Markdown via `MarkdownEngine.toggleTaskItem()`, preserves `NestedScrollView.scrollY`, and dispatches debounced autosave.
+* **Native TableLayout Rendering (`MarkdownTableHelper`):**
+  * Markdown content is parsed into alternating Prose blocks and Markdown Table blocks while respecting code fence boundaries (` ``` ` and `~~~`).
+  * Table rows are pre-normalized before rendering: `<br>`, `<br/>`, and `<br />` variants are converted to real `\n` newlines, bare autolinks (`<https://...>`) are converted to standard clickable Markdown links, and column counts across all data rows are strictly normalized (padded with empty cells or trimmed) to match the header column count.
+  * Each table block renders inside a native `HorizontalScrollView` containing a `TableLayout` with individual `TableRow` and `TextView` cells (`minWidth = 88dp`, `maxWidth = 240dp`, `padding = 12dp`, `textSize = 14sp`, `lineSpacingMultiplier = 1.25f`, `LinkMovementMethod`).
+  * Tables are styled with 1dp `#2C2C2E` borders (dark) / `#D1D1D6` (light), `#1C1C1E` header background (dark) / `#F2F2F7` (light), and alternating `#0D0D0F` / `#000000` rows (dark) or `#FAFAFC` / `#FFFFFF` (light).
+* **Touch-Accurate Checkbox Toggling Across Multi-Segment Documents:**
+  * In preview mode, each prose `TextView` receives an `OnTouchListener` that captures `ACTION_DOWN` coordinates and validates tap slop (`distance < scaledTouchSlop`) on `ACTION_UP`.
+  * Checkbox indices are synchronized globally using `checkboxOffset = runningCheckboxCount`, allowing the user to tap checkboxes in any prose section above or below tables, flip the matching `$k$-th` Markdown token (`- [ ]` <-> `- [x]`) in raw Markdown via `MarkdownEngine.toggleTaskItem()`, preserve `NestedScrollView.scrollY`, and dispatch autosave.
 
 ### 4.4 Material 3 Edge-to-Edge Window Insets
 * Edge-to-edge layout is orchestrated via `ViewCompat.setOnApplyWindowInsetsListener`:
@@ -165,9 +171,12 @@ The database transitions from Room v2 to Room v3 non-destructively using a robus
 * **Scrollable Formatting Tools:** Bold, Italic, Heading, Bullet List, Numbered List, Checklist, Image, Link, Code Block, and Blockquote scroll smoothly horizontally to the right.
 * **Lightweight `/` Slash Command Popup:** Typing `/` opens an M3 `ListPopupWindow` for instant inline Markdown and AI inserts (`H1`, `H2`, `To-do`, `Bullet`, `Number`, `Image`, `Code`, `Quote`, `AI`).
 
-### 4.7 Zero-Dependency Document Export Pipeline (PNG & PDF)
-* **High-Res Card Image (PNG):** Rendered off-screen at 1080px width onto a native `Bitmap` and `Canvas` with theme background, title layout, metadata row, divider line, and wrapped text layout (`StaticLayout`). Compressed to PNG and stored in `cacheDir/shared_notes/`.
-* **Standard A4 Document (PDF):** Generated using Android's native `android.graphics.pdf.PdfDocument` with standard A4 dimensions (595x842 pt), printable margins (48 pt), and automatic multi-page line pagination, eliminating bulky third-party PDF generators.
+### 4.7 Zero-Dependency Full Markdown Document Export Pipeline (`PdfExportHelper`)
+* **Full Markdown PDF Rendering:** Exported PDFs render complete formatted Markdown (headings, bold, italic, bullet & numbered lists, interactive checkboxes, blockquotes, code blocks, and styled tables) without WebViews or third-party engines.
+  * **Off-Screen Layout Measurement:** Builds an off-screen `LinearLayout` measured and laid out strictly at 1080px width using clean print palette styling (`#FFFFFF` background, `#111111` body text, `#555555` metadata, `#D1D1D6` hairline dividers and table borders, `#F2F2F7` code/table header backgrounds).
+  * **Intelligent Split-Point Detection:** Scans child view layouts to detect exact candidate split points from line boundaries (`TextView.layout.getLineBottom(line)`) and row boundaries (`TableRow.bottom`).
+  * **Clean Multi-Page Pagination:** Scales the 1080px layout onto standard A4 pages (595x842 pt, 40 pt margins, scale factor $515 / 1080 \approx 0.47685$) via `android.graphics.pdf.PdfDocument`. Pages break cleanly between lines or table rows without slicing characters or cells across page margins.
+* **Full Markdown High-Res PNG Image:** Renders the 1080px layout onto a native `Bitmap` and `Canvas` with theme-aware palettes (pure OLED `#000000` dark or `#FFFFFF` light), compressing to lossless PNG in `cacheDir/shared_notes/`.
 * **Security & Sandboxing:** Exported files are served exclusively through `FileProvider` (`${applicationId}.fileprovider`) with temporary read permissions.
 
 ### 4.8 Zero-Library Local Inline Images Pipeline
@@ -214,6 +223,9 @@ The codebase is backed by a 5-suite Robolectric + Espresso JVM test suite (`app/
    * Undo/Redo stack restoration and selection position preservation.
    * Physical hardware keyboard shortcuts (`Ctrl+B`, `Ctrl+I`, `Ctrl+Z`, `Ctrl+Y`).
    * Live unsaved text propagation to Android's native share intent.
+   * Multi-line `<br>` variants, uneven column padding/truncation, and autolink normalization in tables.
+   * Native `TableLayout` creation and 1dp border/palette styling.
+   * Valid `%PDF-` document export from rich Markdown documents without raw Markdown syntax leaks.
 2. **`SearchAndFolderTest.kt`:**
    * Offline FTS4 search ranking title matches strictly above body matches.
    * Exclusion of deleted/trashed notes from search results.

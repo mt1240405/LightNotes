@@ -61,6 +61,37 @@ class MarkdownEngine private constructor(private val context: Context) {
             .build()
     }
 
+    val printMarkwon: Markwon by lazy {
+        val density = context.resources.displayMetrics.density
+        Markwon.builder(context)
+            .usePlugin(TablePlugin.create { builder ->
+                builder
+                    .tableCellPadding((12 * density).toInt())
+                    .tableBorderWidth((1 * density).toInt())
+                    .tableBorderColor(Color.parseColor("#D1D1D6"))
+                    .tableHeaderRowBackgroundColor(Color.parseColor("#F2F2F7"))
+                    .tableOddRowBackgroundColor(Color.parseColor("#FAFAFC"))
+                    .tableEvenRowBackgroundColor(Color.parseColor("#FFFFFF"))
+            })
+            .usePlugin(object : AbstractMarkwonPlugin() {
+                override fun configureTheme(builder: MarkwonTheme.Builder) {
+                    builder
+                        .codeBackgroundColor(Color.parseColor("#F0F1F5"))
+                        .codeBlockBackgroundColor(Color.parseColor("#F6F7F9"))
+                }
+            })
+            .usePlugin(StrikethroughPlugin.create())
+            .usePlugin(
+                TaskListPlugin.create(
+                    ContextCompat.getColor(context, R.color.brand_amber),
+                    Color.parseColor("#8E8E93"),
+                    Color.parseColor("#FFFFFF")
+                )
+            )
+            .usePlugin(LinkifyPlugin.create())
+            .build()
+    }
+
     fun render(textView: TextView, markdown: String) {
         if (markdown.isBlank()) {
             textView.text = ""
