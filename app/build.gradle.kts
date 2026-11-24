@@ -13,8 +13,8 @@ android {
         applicationId = "com.lightnotes.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.0"
+        versionCode = 4
+        versionName = "1.1.0"
 
         vectorDrawables {
             useSupportLibrary = true
@@ -48,6 +48,7 @@ android {
 
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     testOptions {

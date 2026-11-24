@@ -1,5 +1,5 @@
 # LightNotes Lite — System Architecture Document
-**Target Version:** LightNotes Lite v1.0 (v0.7-beta)  
+**Target Version:** LightNotes Lite v1.1.0  
 **Status:** Living Engineering Standard  
 **Architectural North Star:** *Local-first now. Sync-ready by design. Cloud when needed.*  
 **Product Core Promise:** *Open -> Write -> Read -> Share*

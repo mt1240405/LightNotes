@@ -17,6 +17,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.lightnotes.app.BuildConfig
 import com.lightnotes.app.data.PreferencesRepository
 import com.lightnotes.app.databinding.ActivitySettingsBinding
 import com.lightnotes.app.security.BiometricHelper
@@ -96,6 +97,7 @@ class SettingsActivity : AppCompatActivity() {
         binding.settingsToolbar.setNavigationOnClickListener {
             finish()
         }
+        binding.tvAppVersion.text = "LightNotes Lite v${BuildConfig.VERSION_NAME}"
     }
 
     private fun setupThemeSettings() {
