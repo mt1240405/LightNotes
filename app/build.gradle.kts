@@ -100,6 +100,7 @@ dependencies {
     implementation("io.noties.markwon:ext-strikethrough:$markwonVersion")
     implementation("io.noties.markwon:ext-tasklist:$markwonVersion")
     implementation("io.noties.markwon:linkify:$markwonVersion")
+    implementation("io.noties.markwon:image:$markwonVersion")
 
     // Unit & Regression Tests (Robolectric + Espresso)
     testImplementation("junit:junit:4.13.2")

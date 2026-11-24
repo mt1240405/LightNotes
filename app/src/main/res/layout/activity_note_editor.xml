@@ -15,7 +15,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:minHeight="?attr/actionBarSize"
-        android:background="?attr/colorSurface"
+        android:background="@color/bg_main"
         app:contentInsetStart="12dp"
         app:contentInsetEnd="12dp"
         app:layout_constraintTop_toTopOf="parent"
@@ -179,8 +179,9 @@
                 android:id="@+id/layoutMetadataRow"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingTop="12dp"
-                android:paddingBottom="6dp"
+                android:layout_marginTop="8dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -192,8 +193,8 @@
                     android:fontFamily="sans-serif"
                     android:singleLine="true"
                     android:ellipsize="end"
-                    android:textColor="@color/text_hint"
-                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp"
                     tools:text="24/11/2026, 2:00 AM | 125 words | Personal" />
 
                 <!-- The ONLY Pin icon in the editor -->
@@ -210,12 +211,12 @@
                     app:tint="@color/text_hint" />
             </LinearLayout>
 
-            <!-- Title -->
+            <!-- Title: 22sp bold, 16dp spacing from metadata and body -->
             <EditText
                 android:id="@+id/etNoteTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="8dp"
                 android:background="@null"
                 android:fontFamily="sans-serif-medium"
                 android:hint="@string/title_hint"
@@ -229,7 +230,7 @@
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="16dp"
                 android:minHeight="320dp">
 
                 <EditText
@@ -241,12 +242,12 @@
                     android:gravity="top|start"
                     android:hint="@string/content_hint"
                     android:inputType="textMultiLine|textCapSentences"
-                    android:lineSpacingMultiplier="1.45"
+                    android:lineSpacingMultiplier="1.4"
                     android:scrollbars="none"
                     android:overScrollMode="never"
                     android:textColor="@color/text_primary"
                     android:textColorHint="@color/text_hint"
-                    android:textSize="15sp" />
+                    android:textSize="16sp" />
 
                 <!-- Native Markwon Rendered TextView -->
                 <TextView
@@ -254,9 +255,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:minHeight="320dp"
-                    android:lineSpacingMultiplier="1.45"
+                    android:lineSpacingMultiplier="1.4"
                     android:textColor="@color/text_primary"
-                    android:textSize="15sp"
+                    android:textSize="16sp"
                     android:visibility="gone" />
             </FrameLayout>
 
@@ -264,119 +265,33 @@
     </androidx.core.widget.NestedScrollView>
 
     <!-- Single Compact Formatting Toolbar: Horizontally scrollable, docked above IME -->
-    <HorizontalScrollView
+    <!-- Single Compact Formatting Toolbar Container: Docked above IME / Navigation -->
+    <LinearLayout
         android:id="@+id/bottomToolbar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:background="?attr/colorSurface"
-        android:elevation="4dp"
-        android:scrollbars="none"
-        android:overScrollMode="never"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@color/bg_main"
+        android:elevation="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- Fixed Left: Undo & Redo (Always visible without horizontal scrolling) -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="48dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp">
-
-            <ImageButton
-                android:id="@+id/btnFormatBold"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Bold"
-                android:src="@drawable/ic_format_bold"
-                app:tint="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/btnFormatItalic"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Italic"
-                android:src="@drawable/ic_format_italic"
-                app:tint="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/btnFormatHeading"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Heading"
-                android:src="@drawable/ic_format_heading"
-                app:tint="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/btnFormatBullet"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Bulleted List"
-                android:src="@drawable/ic_format_list"
-                app:tint="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/btnFormatNumber"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Numbered List"
-                android:src="@drawable/ic_format_numbered_list"
-                app:tint="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/btnFormatChecklist"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Checklist"
-                android:src="@drawable/ic_format_task"
-                app:tint="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/btnFormatLink"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Link"
-                android:src="@drawable/ic_link"
-                app:tint="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/btnFormatCode"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Code Block"
-                android:src="@drawable/ic_format_code"
-                app:tint="@color/text_primary" />
-
-            <ImageButton
-                android:id="@+id/btnFormatQuote"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Blockquote"
-                android:src="@drawable/ic_format_quote"
-                app:tint="@color/text_primary" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
-                android:background="@color/divider" />
+            android:paddingStart="6dp"
+            android:paddingEnd="2dp">
 
             <ImageButton
                 android:id="@+id/btnUndo"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:alpha="0.4"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:alpha="0.35"
                 android:enabled="false"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Undo"
@@ -385,16 +300,131 @@
 
             <ImageButton
                 android:id="@+id/btnRedo"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:alpha="0.4"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:alpha="0.35"
                 android:enabled="false"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Redo"
                 android:src="@drawable/ic_redo"
                 app:tint="@color/text_primary" />
 
+            <View
+                android:layout_width="1dp"
+                android:layout_height="22dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:background="@color/divider" />
         </LinearLayout>
-    </HorizontalScrollView>
+
+        <!-- Horizontally scrollable formatting tools -->
+        <HorizontalScrollView
+            android:id="@+id/scrollFormattingTools"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:scrollbars="none"
+            android:overScrollMode="never">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingEnd="8dp">
+
+                <ImageButton
+                    android:id="@+id/btnFormatBold"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Bold"
+                    android:src="@drawable/ic_format_bold"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnFormatItalic"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Italic"
+                    android:src="@drawable/ic_format_italic"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnFormatHeading"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Heading"
+                    android:src="@drawable/ic_format_heading"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnFormatBullet"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Bulleted List"
+                    android:src="@drawable/ic_format_list"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnFormatNumber"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Numbered List"
+                    android:src="@drawable/ic_format_numbered_list"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnFormatChecklist"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Checklist"
+                    android:src="@drawable/ic_format_task"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnFormatImage"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Insert Image"
+                    android:src="@drawable/ic_image"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnFormatLink"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Link"
+                    android:src="@drawable/ic_link"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnFormatCode"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Code Block"
+                    android:src="@drawable/ic_format_code"
+                    app:tint="@color/text_primary" />
+
+                <ImageButton
+                    android:id="@+id/btnFormatQuote"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Blockquote"
+                    android:src="@drawable/ic_format_quote"
+                    app:tint="@color/text_primary" />
+
+            </LinearLayout>
+        </HorizontalScrollView>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

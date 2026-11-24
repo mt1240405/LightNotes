@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.SpannableString
@@ -24,11 +25,16 @@ import android.widget.ListPopupWindow
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
@@ -36,6 +42,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.lightnotes.app.R
 import com.lightnotes.app.core.model.Note
+import com.lightnotes.app.data.PreferencesRepository
 import com.lightnotes.app.databinding.ActivityNoteEditorBinding
 import com.lightnotes.app.editor.EditHistoryManager
 import com.lightnotes.app.markdown.MarkdownEngine
@@ -45,6 +52,12 @@ import io.noties.markwon.ext.tasklist.TaskListSpan
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -59,6 +72,7 @@ class NoteEditorActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityNoteEditorBinding
     private val viewModel: EditorViewModel by viewModels()
+    private val prefsRepo by lazy { PreferencesRepository.getInstance(this) }
 
     private var isPreviewMode = false
     private var isPinned = false
@@ -72,6 +86,20 @@ class NoteEditorActivity : AppCompatActivity() {
 
     private var renderedRevision = 0L
     private var isUserTyping = false
+
+    // AI Preferences (Off by default when blank)
+    private var aiApiKey: String = ""
+    private var aiEndpoint: String = "https://api.openai.com/v1/chat/completions"
+    private var aiModel: String = "gpt-4o-mini"
+
+    // Photo picker for lightweight local-only markdown images
+    private val pickImageLauncher = registerForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            insertImageFromUri(uri)
+        }
+    }
 
     // Search inside note
     private val searchMatches = mutableListOf<Int>()
@@ -100,9 +128,33 @@ class NoteEditorActivity : AppCompatActivity() {
         initViews()
         initKeyboardInsets()
         initEditHistory()
+        observePreferences()
 
         viewModel.initNote(globalId, localId)
         observeViewModel()
+    }
+
+    private fun observePreferences() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    prefsRepo.aiApiKeyFlow.collect { key ->
+                        aiApiKey = key
+                        setupSlashCommandPopup()
+                    }
+                }
+                launch {
+                    prefsRepo.aiEndpointFlow.collect { endpoint ->
+                        aiEndpoint = endpoint
+                    }
+                }
+                launch {
+                    prefsRepo.aiModelFlow.collect { model ->
+                        aiModel = model
+                    }
+                }
+            }
+        }
     }
 
     private fun initViews() {
@@ -138,6 +190,11 @@ class NoteEditorActivity : AppCompatActivity() {
         binding.btnFormatBullet.setOnClickListener { applyLinePrefix("- ") }
         binding.btnFormatNumber.setOnClickListener { applyLinePrefix("1. ") }
         binding.btnFormatChecklist.setOnClickListener { applyLinePrefix("- [ ] ") }
+        binding.btnFormatImage.setOnClickListener {
+            pickImageLauncher.launch(
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+            )
+        }
         binding.btnFormatLink.setOnClickListener { applyFormatting("[", "](url)", "text") }
         binding.btnFormatCode.setOnClickListener { applyFormatting("```\n", "\n```") }
         binding.btnFormatQuote.setOnClickListener { applyLinePrefix("> ") }
@@ -221,9 +278,9 @@ class NoteEditorActivity : AppCompatActivity() {
     private fun initEditHistory() {
         editHistoryManager = EditHistoryManager(binding.etNoteContent) { canUndo, canRedo ->
             binding.btnUndo.isEnabled = canUndo
-            binding.btnUndo.alpha = if (canUndo) 1.0f else 0.4f
+            binding.btnUndo.alpha = if (canUndo) 1.0f else 0.35f
             binding.btnRedo.isEnabled = canRedo
-            binding.btnRedo.alpha = if (canRedo) 1.0f else 0.4f
+            binding.btnRedo.alpha = if (canRedo) 1.0f else 0.35f
         }
     }
 
@@ -438,14 +495,21 @@ class NoteEditorActivity : AppCompatActivity() {
     }
 
     private fun setupSlashCommandPopup() {
-        val commands = listOf(
+        val commands = mutableListOf(
             SlashCommand("H1 Title", "Big section heading", "#", "# "),
             SlashCommand("H2 Subtitle", "Medium subsection heading", "##", "## "),
             SlashCommand("To-do Checkbox", "Interactive task checklist item", "[ ]", "- [ ] "),
             SlashCommand("Bullet List", "Unordered bulleted point", "•", "- "),
+            SlashCommand("Numbered List", "Ordered list item", "1.", "1. "),
+            SlashCommand("Insert Image", "Pick photo from gallery", "IMG", "![](", ")"),
             SlashCommand("Code Block", "Fenced code block", "</>", "```\n", "\n```"),
             SlashCommand("Quote", "Blockquote / excerpt", "”", "> ")
         )
+        if (aiApiKey.isNotBlank()) {
+            commands.add(SlashCommand("AI Summarize", "Summarize note with AI", "AI", "", ""))
+            commands.add(SlashCommand("AI Fix Grammar", "Clean grammar and tone with AI", "AI", "", ""))
+            commands.add(SlashCommand("AI Format Markdown", "Format as clean Markdown", "AI", "", ""))
+        }
 
         val popup = ListPopupWindow(this).apply {
             anchorView = binding.bottomToolbar
@@ -483,9 +547,46 @@ class NoteEditorActivity : AppCompatActivity() {
         val text = binding.etNoteContent.text ?: return
         val pos = binding.etNoteContent.selectionStart
         if (pos > 0 && text.length >= pos && text[pos - 1] == '/') {
-            val replacement = "${cmd.prefix}${cmd.suffix}"
-            text.replace(pos - 1, pos, replacement)
-            binding.etNoteContent.setSelection(pos - 1 + cmd.prefix.length)
+            text.delete(pos - 1, pos)
+            when (cmd.title) {
+                "Insert Image" -> {
+                    pickImageLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                }
+                "AI Summarize" -> executeAiAction(AiAction.SUMMARIZE)
+                "AI Fix Grammar" -> executeAiAction(AiAction.FIX_GRAMMAR)
+                "AI Format Markdown" -> executeAiAction(AiAction.FORMAT_MARKDOWN)
+                else -> {
+                    val replacement = "${cmd.prefix}${cmd.suffix}"
+                    text.insert(pos - 1, replacement)
+                    binding.etNoteContent.setSelection(pos - 1 + cmd.prefix.length)
+                }
+            }
+        }
+    }
+
+    private fun insertImageFromUri(uri: Uri) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val imagesDir = File(filesDir, "images").apply { mkdirs() }
+                val imageFile = File(imagesDir, "img_${System.currentTimeMillis()}.jpg")
+                contentResolver.openInputStream(uri)?.use { input ->
+                    FileOutputStream(imageFile).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    val markdown = "\n![image](file://${imageFile.absolutePath})\n"
+                    val start = binding.etNoteContent.selectionStart.coerceAtLeast(0)
+                    binding.etNoteContent.text?.insert(start, markdown)
+                    binding.etNoteContent.setSelection((start + markdown.length).coerceAtMost(binding.etNoteContent.length()))
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@NoteEditorActivity, "Failed to import image: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
@@ -560,12 +661,16 @@ class NoteEditorActivity : AppCompatActivity() {
             add(0, 2, 1, if (isPinned) "Unpin note" else "Pin note")
             add(0, 3, 2, if (isFavorite) "Remove from favorites" else "Add to favorites")
             add(0, 4, 3, "Move to folder...")
-            add(0, 5, 4, if (isArchived) "Unarchive note" else "Archive note")
-            add(0, 6, 5, "Settings")
+            add(0, 8, 4, "Add to Home screen")
+            if (aiApiKey.isNotBlank()) {
+                add(0, 9, 5, "AI Assistant ($aiModel)...")
+            }
+            add(0, 5, 6, if (isArchived) "Unarchive note" else "Archive note")
+            add(0, 6, 7, "Settings")
             val deleteTitle = SpannableString("Delete note").apply {
                 setSpan(ForegroundColorSpan(Color.parseColor("#FF453A")), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
-            add(0, 7, 6, deleteTitle)
+            add(0, 7, 8, deleteTitle)
         }
 
         popup.setOnMenuItemClickListener { item ->
@@ -582,6 +687,8 @@ class NoteEditorActivity : AppCompatActivity() {
                     viewModel.toggleFavorite(title, content)
                 }
                 4 -> showMoveToFolderDialog(title, content)
+                8 -> pinToHomeScreen()
+                9 -> showAiAssistantMenu()
                 5 -> {
                     viewModel.archiveNote(title, content) {
                         Toast.makeText(this, "Note archived", Toast.LENGTH_SHORT).show()
@@ -601,6 +708,155 @@ class NoteEditorActivity : AppCompatActivity() {
             true
         }
         popup.show()
+    }
+
+    private fun pinToHomeScreen() {
+        if (ShortcutManagerCompat.isRequestPinShortcutSupported(this)) {
+            val currentNote = viewModel.currentNote.value
+            val title = binding.etNoteTitle.text.toString().ifBlank { "Untitled Note" }
+            val shortcutIntent = Intent(this, NoteEditorActivity::class.java).apply {
+                action = Intent.ACTION_VIEW
+                putExtra(EXTRA_GLOBAL_ID, currentNote?.globalId)
+                putExtra(EXTRA_NOTE_ID, currentNote?.localId ?: 0L)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            }
+            val icon = IconCompat.createWithResource(this, R.drawable.ic_app_icon)
+            val shortcutId = "note_${currentNote?.globalId ?: System.currentTimeMillis()}"
+            val pinShortcutInfo = ShortcutInfoCompat.Builder(this, shortcutId)
+                .setShortLabel(title.take(25))
+                .setLongLabel(title)
+                .setIcon(icon)
+                .setIntent(shortcutIntent)
+                .build()
+            val pinned = ShortcutManagerCompat.requestPinShortcut(this, pinShortcutInfo, null)
+            if (pinned) {
+                Toast.makeText(this, "Shortcut pinned to Home screen", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(this, "Home screen shortcuts not supported on this launcher", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private enum class AiAction {
+        SUMMARIZE, FIX_GRAMMAR, FORMAT_MARKDOWN
+    }
+
+    private fun showAiAssistantMenu() {
+        val options = arrayOf("Summarize Note", "Fix Grammar & Tone", "Format as Clean Markdown")
+        AlertDialog.Builder(this)
+            .setTitle("AI Assistant ($aiModel)")
+            .setItems(options) { _, which ->
+                val action = when (which) {
+                    0 -> AiAction.SUMMARIZE
+                    1 -> AiAction.FIX_GRAMMAR
+                    else -> AiAction.FORMAT_MARKDOWN
+                }
+                executeAiAction(action)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun executeAiAction(action: AiAction) {
+        val start = binding.etNoteContent.selectionStart
+        val end = binding.etNoteContent.selectionEnd
+        val text = binding.etNoteContent.text.toString()
+        val isSelection = (start in 0 until end)
+        val targetText = if (isSelection) text.substring(start, end).trim() else text.trim()
+
+        if (targetText.isBlank()) {
+            Toast.makeText(this, "No content for AI to process", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val progressDialog = AlertDialog.Builder(this)
+            .setTitle("AI Assistant")
+            .setMessage("Processing with $aiModel...")
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val systemPrompt = when (action) {
+                    AiAction.SUMMARIZE -> "You are a concise executive assistant. Provide a clear, bulleted summary of the following text in markdown. Output only the summary."
+                    AiAction.FIX_GRAMMAR -> "Fix any grammar, spelling, punctuation, and tone issues in the following text while preserving its original meaning and markdown formatting. Output only the corrected text."
+                    AiAction.FORMAT_MARKDOWN -> "Structure and format the following notes cleanly using standard Markdown headings, lists, and bold text. Output only the formatted markdown."
+                }
+
+                val endpointUrl = if (aiEndpoint.isBlank()) "https://api.openai.com/v1/chat/completions" else aiEndpoint
+                val url = URL(endpointUrl)
+                val conn = (url.openConnection() as HttpURLConnection).apply {
+                    requestMethod = "POST"
+                    connectTimeout = 15000
+                    readTimeout = 30000
+                    doOutput = true
+                    setRequestProperty("Content-Type", "application/json")
+                    setRequestProperty("Authorization", "Bearer $aiApiKey")
+                }
+
+                val requestBody = JSONObject().apply {
+                    put("model", if (aiModel.isBlank()) "gpt-4o-mini" else aiModel)
+                    val messages = JSONArray().apply {
+                        put(JSONObject().put("role", "system").put("content", systemPrompt))
+                        put(JSONObject().put("role", "user").put("content", targetText))
+                    }
+                    put("messages", messages)
+                    put("temperature", 0.3)
+                }
+
+                conn.outputStream.use { os ->
+                    os.write(requestBody.toString().toByteArray(Charsets.UTF_8))
+                }
+
+                val responseCode = conn.responseCode
+                if (responseCode in 200..299) {
+                    val responseStr = conn.inputStream.bufferedReader().use { it.readText() }
+                    val responseJson = JSONObject(responseStr)
+                    val choices = responseJson.optJSONArray("choices")
+                    val resultText = choices?.optJSONObject(0)?.optJSONObject("message")?.optString("content") ?: ""
+
+                    withContext(Dispatchers.Main) {
+                        progressDialog.dismiss()
+                        showAiResultDialog(resultText, isSelection, start, end)
+                    }
+                } else {
+                    val errStr = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: "HTTP $responseCode"
+                    withContext(Dispatchers.Main) {
+                        progressDialog.dismiss()
+                        Toast.makeText(this@NoteEditorActivity, "AI request failed ($responseCode): $errStr", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    Toast.makeText(this@NoteEditorActivity, "AI error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun showAiResultDialog(resultText: String, isSelection: Boolean, selStart: Int, selEnd: Int) {
+        val replaceLabel = if (isSelection) "Replace Selection" else "Replace Note Content"
+        AlertDialog.Builder(this)
+            .setTitle("AI Result")
+            .setMessage(resultText)
+            .setPositiveButton(replaceLabel) { _, _ ->
+                if (isSelection && selStart in 0..selEnd) {
+                    binding.etNoteContent.text?.replace(selStart, selEnd, resultText)
+                } else {
+                    binding.etNoteContent.setText(resultText)
+                }
+                Toast.makeText(this, "Content updated", Toast.LENGTH_SHORT).show()
+            }
+            .setNeutralButton("Append") { _, _ ->
+                val current = binding.etNoteContent.text.toString()
+                val updated = if (current.isBlank()) resultText else "$current\n\n$resultText"
+                binding.etNoteContent.setText(updated)
+                Toast.makeText(this, "Appended to note", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Dismiss", null)
+            .show()
     }
 
     private fun showMoveToFolderDialog(title: String, content: String) {

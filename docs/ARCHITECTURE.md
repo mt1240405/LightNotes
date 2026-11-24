@@ -152,10 +152,38 @@ The database transitions from Room v2 to Room v3 non-destructively using a robus
   * **Bottom Formatting Toolbar:** `paddingBottom = maxOf(sysBars.bottom, ime.bottom)` provides generous clearance above gesture navigation bars when closed, and sits flush with `8dp` padding directly above the keyboard when typing.
   * **Content ScrollView:** Adjusts bottom padding dynamically between editing mode and full-screen preview mode (`previewBottomPadding = sysBars.bottom`).
 
-### 4.5 Material 3 Primary UI Components & Menus
-* **Overflow Menu (`⋮`):** Official Material 3 `PopupMenu` styled with M3 surface tokens (`?attr/colorSurfaceContainerHigh`, `14dp` rounded corners, `1dp` outline stroke) hosting: `Find in note`, `Pin / Unpin`, `Favorite`, `Move to folder`, `Archive`, `Settings`, and `Delete` (tinted `?attr/colorError` / `#FF453A`).
-* **Modal Share Sheet (`ShareBottomSheet`):** Official Material 3 `BottomSheetDialogFragment` with `BottomSheetDragHandleView`, `?attr/colorSurfaceContainer` background, `20dp` top corners, and `#FFB200` amber action rows for Plain Text and `.md` source export.
-* **Lightweight `/` Slash Command Popup:** Typing `/` at the start of a line or after a space displays a compact M3 `ListPopupWindow` anchored above the bottom toolbar for quick inserts: `H1 Title`, `H2 Subtitle`, `To-do Checkbox`, `Bullet List`, `Code Block`, and `Quote`.
+### 4.5 Material 3 Primary UI Components & True `#000000` OLED Hierarchy
+* **Zero-Pixel OLED Palette:** The canvas sets `android:windowBackground`, `colorSurface`, `colorBackground`, and `colorSurfaceContainerLowest` to `#000000` in night mode, with tonal elevation disabled (`elevationOverlayEnabled = false`) to eliminate muddy grey/purple overlays.
+* **Surface Hierarchy:**
+  * **Note Cards:** Flat `#121214` surface with a crisp `1dp` `#242426` hairline border and `14dp` corner radius.
+  * **Popups & Menus:** `#1C1C1E` surface with `1dp` `#242426` hairline border and `16dp` corner radius (`bg_m3_popup_surface`).
+  * **Modal Bottom Sheets:** `#1C1C1E` surface with `20dp` top corner radius and `BottomSheetDragHandleView`.
+* **Typography & Spacing Rhythm:** Primary text `#F5F5F7` (crisp off-white), secondary metadata `#8E8E93` (`13sp`), amber accent `#FFB200`. Clean `16dp` vertical rhythm between title (`22sp` bold), metadata row, and editor body (`16sp`, `1.4f` line spacing multiplier, `20dp` horizontal padding).
+
+### 4.6 Pinned Undo/Redo & Formatting Toolbar
+* **Fixed Thumb-Reach Controls:** The bottom toolbar anchors **Undo (`↶`)** and **Redo (`↷`)** fixed to the left of the container, outside the `HorizontalScrollView`. They are immediately accessible without horizontal scrolling during typing, dimming smoothly (`alpha = 0.35f`) when disabled.
+* **Scrollable Formatting Tools:** Bold, Italic, Heading, Bullet List, Numbered List, Checklist, Image, Link, Code Block, and Blockquote scroll smoothly horizontally to the right.
+* **Lightweight `/` Slash Command Popup:** Typing `/` opens an M3 `ListPopupWindow` for instant inline Markdown and AI inserts (`H1`, `H2`, `To-do`, `Bullet`, `Number`, `Image`, `Code`, `Quote`, `AI`).
+
+### 4.7 Zero-Dependency Document Export Pipeline (PNG & PDF)
+* **High-Res Card Image (PNG):** Rendered off-screen at 1080px width onto a native `Bitmap` and `Canvas` with theme background, title layout, metadata row, divider line, and wrapped text layout (`StaticLayout`). Compressed to PNG and stored in `cacheDir/shared_notes/`.
+* **Standard A4 Document (PDF):** Generated using Android's native `android.graphics.pdf.PdfDocument` with standard A4 dimensions (595x842 pt), printable margins (48 pt), and automatic multi-page line pagination, eliminating bulky third-party PDF generators.
+* **Security & Sandboxing:** Exported files are served exclusively through `FileProvider` (`${applicationId}.fileprovider`) with temporary read permissions.
+
+### 4.8 Zero-Library Local Inline Images Pipeline
+* **Photo Picker:** Uses standard Android Jetpack `PickVisualMedia(ImageOnly)` contract, eliminating legacy storage permission requirements.
+* **Local Isolation:** Selected images are streamed into private internal storage (`filesDir/images/img_<timestamp>.jpg`), referenced as standard Markdown `![image](file://...)`.
+* **Off-Thread Downsampled Rendering:** Markwon's `ImagesPlugin` is registered with `FileSchemeHandler` and `DefaultDownScalingMediaDecoder`, decoding images on background threads via `BitmapFactory.Options(inSampleSize)` downsampled to display width, preventing OOM crashes and eliminating heavy Coil/Glide dependencies.
+
+### 4.9 Add to Home Screen Shortcuts
+* Pin any note directly to the Android launcher via `ShortcutManagerCompat.requestPinShortcut(...)`.
+* Configures `ShortcutInfoCompat` with deep-link intent (`Intent.ACTION_VIEW` targeting `NoteEditorActivity` with note UUID and local ID) and app icon.
+
+### 4.10 Tiny Zero-SDK BYOK AI Assistant Pipeline
+* **Design Philosophy:** Minimal (~15 KB bytecode), zero external AI SDKs, off by default, 100% private.
+* **Architecture:** Communicates directly with user-configured OpenAI-compatible endpoints (`https://api.openai.com/v1/chat/completions`, OpenRouter, Groq, DeepSeek, or local Ollama/LM Studio) via standard `java.net.HttpURLConnection` and `org.json.JSONObject`.
+* **Security:** API key is stored locally in Jetpack DataStore preferences with zero telemetry.
+* **Actions:** One-tap `Summarize`, `Fix Grammar & Tone`, and `Format as Clean Markdown` with interactive preview dialog to Replace Selection, Replace Note, or Append.
 
 ---
 

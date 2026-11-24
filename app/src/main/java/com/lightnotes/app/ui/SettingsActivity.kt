@@ -78,6 +78,7 @@ class SettingsActivity : AppCompatActivity() {
         setupThemeSettings()
         setupBiometricSettings()
         setupBackupActions()
+        setupAiSettings()
     }
 
     private fun setupWindowInsets() {
@@ -86,6 +87,7 @@ class SettingsActivity : AppCompatActivity() {
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
             )
             binding.settingsToolbar.setPadding(0, systemBars.top, 0, 0)
+            binding.settingsScrollView.setPadding(0, 0, 0, systemBars.bottom)
             insets
         }
     }
@@ -316,5 +318,95 @@ class SettingsActivity : AppCompatActivity() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun setupAiSettings() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    prefsRepo.aiApiKeyFlow.collect { key ->
+                        binding.tvAiApiKeySummary.text = if (key.isBlank()) {
+                            "Disabled (Not configured)"
+                        } else {
+                            "Configured (••••${key.takeLast(4)})"
+                        }
+                    }
+                }
+                launch {
+                    prefsRepo.aiEndpointFlow.collect { endpoint ->
+                        binding.tvAiEndpointSummary.text = endpoint
+                    }
+                }
+                launch {
+                    prefsRepo.aiModelFlow.collect { model ->
+                        binding.tvAiModelSummary.text = model
+                    }
+                }
+            }
+        }
+
+        binding.btnAiApiKey.setOnClickListener {
+            val input = EditText(this).apply {
+                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                hint = "Enter API key (e.g. sk-...)"
+            }
+            AlertDialog.Builder(this)
+                .setTitle("AI API Key")
+                .setMessage("Enter your API key. Leave blank and confirm to disable.")
+                .setView(input)
+                .setPositiveButton("Save") { _, _ ->
+                    val key = input.text.toString().trim()
+                    lifecycleScope.launch {
+                        prefsRepo.setAiApiKey(key)
+                        Toast.makeText(this@SettingsActivity, if (key.isBlank()) "AI helper disabled" else "API key saved", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+
+        binding.btnAiEndpoint.setOnClickListener {
+            lifecycleScope.launch {
+                val currentEndpoint = prefsRepo.aiEndpointFlow.first()
+                val input = EditText(this@SettingsActivity).apply {
+                    inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+                    setText(currentEndpoint)
+                }
+                AlertDialog.Builder(this@SettingsActivity)
+                    .setTitle("API Endpoint URL")
+                    .setMessage("Standard OpenAI chat completions compatible endpoint.")
+                    .setView(input)
+                    .setPositiveButton("Save") { _, _ ->
+                        val url = input.text.toString().trim()
+                        if (url.isNotBlank()) {
+                            lifecycleScope.launch { prefsRepo.setAiEndpoint(url) }
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
+
+        binding.btnAiModel.setOnClickListener {
+            lifecycleScope.launch {
+                val currentModel = prefsRepo.aiModelFlow.first()
+                val input = EditText(this@SettingsActivity).apply {
+                    inputType = InputType.TYPE_CLASS_TEXT
+                    setText(currentModel)
+                }
+                AlertDialog.Builder(this@SettingsActivity)
+                    .setTitle("Model Name")
+                    .setMessage("e.g. gpt-4o-mini, deepseek-chat, llama-3.1-8b")
+                    .setView(input)
+                    .setPositiveButton("Save") { _, _ ->
+                        val model = input.text.toString().trim()
+                        if (model.isNotBlank()) {
+                            lifecycleScope.launch { prefsRepo.setAiModel(model) }
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
     }
 }

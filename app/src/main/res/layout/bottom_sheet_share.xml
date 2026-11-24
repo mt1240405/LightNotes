@@ -136,7 +136,103 @@
             android:layout_height="1dp"
             android:background="@color/divider" />
 
-        <!-- 3. Cancel Action -->
+        <!-- 3. Share as Image (PNG) -->
+        <LinearLayout
+            android:id="@+id/btnShareImage"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_image"
+                app:tint="?attr/colorPrimary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Share as Image (PNG)"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="High-resolution rendered note card"
+                    android:textColor="@color/text_hint"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider" />
+
+        <!-- 4. Share as PDF Document -->
+        <LinearLayout
+            android:id="@+id/btnSharePdf"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_text_format"
+                app:tint="?attr/colorPrimary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Share as PDF Document"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Standard A4 printable document"
+                    android:textColor="@color/text_hint"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider" />
+
+        <!-- 5. Cancel Action -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
             style="@style/Widget.Material3.Button.TextButton"

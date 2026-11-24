@@ -97,7 +97,7 @@
                 android:textSize="14sp"
                 tools:text="Review Q3 architecture proposals and finalize Markwon inline LaTeX math renderer." />
 
-            <!-- Bottom Row: 11sp Metadata Timestamp + Folder -->
+            <!-- Bottom Row: 13sp Secondary Metadata Timestamp + Folder -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -109,8 +109,8 @@
                     android:id="@+id/tvNoteDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/text_hint"
-                    android:textSize="11sp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp"
                     android:fontFamily="sans-serif"
                     tools:text="Jul 28, 2024" />
 
@@ -128,8 +128,8 @@
                     android:paddingEnd="6dp"
                     android:paddingTop="2dp"
                     android:paddingBottom="2dp"
-                    android:textColor="@color/text_hint"
-                    android:textSize="10sp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp"
                     android:visibility="gone"
                     tools:text="Work"
                     tools:visibility="visible" />

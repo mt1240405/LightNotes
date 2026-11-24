@@ -22,6 +22,9 @@ class PreferencesRepository private constructor(private val context: Context) {
         val KEY_EDITOR_LINE_SPACING = floatPreferencesKey("editor_line_spacing") // e.g. 1.45f
         val KEY_SORT_ORDER = stringPreferencesKey("sort_order")
         val KEY_BIOMETRIC_LOCK_ENABLED = booleanPreferencesKey("biometric_lock_enabled")
+        val KEY_AI_ENDPOINT = stringPreferencesKey("ai_endpoint")
+        val KEY_AI_MODEL = stringPreferencesKey("ai_model")
+        val KEY_AI_API_KEY = stringPreferencesKey("ai_api_key")
 
         @Volatile
         private var INSTANCE: PreferencesRepository? = null
@@ -73,5 +76,30 @@ class PreferencesRepository private constructor(private val context: Context) {
 
     suspend fun setBiometricLockEnabled(enabled: Boolean) {
         context.dataStore.edit { it[KEY_BIOMETRIC_LOCK_ENABLED] = enabled }
+    }
+
+    // Zero-SDK BYOK AI preferences
+    val aiEndpointFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AI_ENDPOINT] ?: "https://api.openai.com/v1/chat/completions"
+    }
+
+    suspend fun setAiEndpoint(endpoint: String) {
+        context.dataStore.edit { it[KEY_AI_ENDPOINT] = endpoint }
+    }
+
+    val aiModelFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AI_MODEL] ?: "gpt-4o-mini"
+    }
+
+    suspend fun setAiModel(model: String) {
+        context.dataStore.edit { it[KEY_AI_MODEL] = model }
+    }
+
+    val aiApiKeyFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[KEY_AI_API_KEY] ?: ""
+    }
+
+    suspend fun setAiApiKey(apiKey: String) {
+        context.dataStore.edit { it[KEY_AI_API_KEY] = apiKey }
     }
 }

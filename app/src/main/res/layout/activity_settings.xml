@@ -7,21 +7,23 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/bg_main"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="false">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/settingsToolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="?attr/actionBarSize"
-        android:background="?attr/colorSurface"
+        android:background="@color/bg_main"
         app:navigationIcon="@drawable/ic_arrow_back"
         app:title="@string/settings_title"
         app:titleTextColor="@color/text_primary" />
 
     <ScrollView
+        android:id="@+id/settingsScrollView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -302,6 +304,147 @@
                     android:text="Migrate notes from ColorOS/Realme notes backup file"
                     android:textColor="@color/text_hint"
                     android:textSize="12sp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp"
+                android:background="@color/divider" />
+
+            <!-- SECTION: AI ASSISTANT (BYOK) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="AI Assistant (Optional BYOK)"
+                android:textColor="@color/brand_amber"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textAllCaps="true"
+                android:letterSpacing="0.05" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Zero-dependency local helper. Connect to OpenAI, OpenRouter, Groq, or local LLM directly."
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <!-- API Key -->
+            <LinearLayout
+                android:id="@+id/btnAiApiKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="API Key"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:id="@+id/tvAiApiKeySummary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Disabled (Not configured)"
+                        android:textColor="@color/text_hint"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Endpoint URL -->
+            <LinearLayout
+                android:id="@+id/btnAiEndpoint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="API Endpoint URL"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:id="@+id/tvAiEndpointSummary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="https://api.openai.com/v1/chat/completions"
+                        android:textColor="@color/text_hint"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Model Name -->
+            <LinearLayout
+                android:id="@+id/btnAiModel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Model Name"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:fontFamily="sans-serif-medium" />
+
+                    <TextView
+                        android:id="@+id/tvAiModelSummary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="gpt-4o-mini"
+                        android:textColor="@color/text_hint"
+                        android:textSize="12sp" />
+                </LinearLayout>
             </LinearLayout>
 
             <View

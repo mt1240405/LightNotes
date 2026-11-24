@@ -1,27 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand / Accent: ColorOS signature amber -->
+    <!-- Brand / Accent: Signature amber -->
     <color name="brand_amber">#FFB200</color>
     <color name="brand_amber_dark">#E6A000</color>
     <color name="brand_amber_dim">#1FFFB200</color>
     <color name="brand_amber_ripple">#33FFB200</color>
     <color name="brand_amber_badge">#FFB200</color>
 
-    <!-- Pure OLED Dark Theme Palette -->
+    <!-- Pure OLED Zero-Pixel Dark Theme Palette -->
     <color name="bg_canvas">#000000</color>
     <color name="bg_main">#000000</color>
-    <color name="bg_surface">#1C1C1E</color>
-    <color name="card_bg">#1C1C1E</color>
-    <color name="card_border">#2C2C2E</color>
-    <color name="search_fill">#1C1C1E</color>
-    <color name="divider">#2C2C2E</color>
+    <color name="bg_surface">#000000</color>
+    <color name="card_bg">#121214</color>
+    <color name="card_border">#242426</color>
+    <color name="search_fill">#121214</color>
+    <color name="divider">#242426</color>
 
-    <color name="text_primary">#EBECEF</color>
-    <color name="text_secondary">#9EA2AE</color>
-    <color name="text_hint">#616571</color>
+    <!-- Typography: Crisp off-white primary & 8E8E93 secondary -->
+    <color name="text_primary">#F5F5F7</color>
+    <color name="text_secondary">#8E8E93</color>
+    <color name="text_hint">#636773</color>
 
     <color name="toolbar_bg">#000000</color>
-    <color name="toolbar_border">#2C2C2E</color>
+    <color name="toolbar_border">#242426</color>
 
     <color name="fab_bg">#FFB200</color>
     <color name="fab_icon">#111214</color>
@@ -30,7 +31,7 @@
     <color name="tag_text">#C5C8D4</color>
 
     <!-- Circular Amber Checklist badge -->
-    <color name="badge_checklist_bg">#2C2C2E</color>
+    <color name="badge_checklist_bg">#242426</color>
     <color name="badge_checklist_text">#A8ABB7</color>
     <color name="badge_checklist_done_bg">#26FFB200</color>
     <color name="badge_checklist_done_text">#FFB200</color>
@@ -46,7 +47,7 @@
     <color name="highlight_gray">#8E8E93</color>
 
     <!-- Section Header text -->
-    <color name="section_header_text">#787C89</color>
+    <color name="section_header_text">#8E8E93</color>
 
     <!-- AI Accent -->
     <color name="ai_accent">#B388FF</color>
