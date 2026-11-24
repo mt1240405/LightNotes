@@ -8,6 +8,7 @@ import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TableLayout
 import android.widget.TextView
@@ -128,7 +129,7 @@ object PdfExportHelper {
                         segment.table,
                         markwon,
                         isNight = isNight,
-                        isPrint = !isNight
+                        isPrint = true
                     ).apply {
                         val lp = LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -138,9 +139,27 @@ object PdfExportHelper {
                             bottomMargin = (16 * density).toInt()
                         }
                         layoutParams = lp
-                        isStretchAllColumns = true
                     }
                     layout.addView(tableLayout)
+                }
+                is MarkdownSegment.Image -> {
+                    val bitmap = MarkdownTableHelper.decodeSampledBitmap(context, segment.uriString, LAYOUT_WIDTH_PX)
+                    if (bitmap != null) {
+                        val iv = ImageView(context).apply {
+                            layoutParams = LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                            ).apply {
+                                topMargin = (10 * density).toInt()
+                                bottomMargin = (14 * density).toInt()
+                            }
+                            adjustViewBounds = true
+                            scaleType = ImageView.ScaleType.FIT_CENTER
+                            contentDescription = segment.altText
+                            setImageBitmap(bitmap)
+                        }
+                        layout.addView(iv)
+                    }
                 }
             }
         }
@@ -188,7 +207,8 @@ object PdfExportHelper {
         outputFile: File,
         dateStr: String = "",
         wordCount: Int = 0,
-        folderName: String? = null
+        folderName: String? = null,
+        isOledDark: Boolean = false
     ): File {
         val layout = buildRenderedLayout(
             context = context,
@@ -197,7 +217,7 @@ object PdfExportHelper {
             dateStr = dateStr,
             wordCount = wordCount,
             folderName = folderName,
-            isNight = false
+            isNight = isOledDark
         )
 
         val printableWidth = A4_PAGE_WIDTH_PT - (A4_MARGIN_PT * 2) // 515
@@ -211,6 +231,8 @@ object PdfExportHelper {
 
         var currentY = 0
         var pageNumber = 1
+
+        val pageBgColor = if (isOledDark) Color.BLACK else Color.WHITE
 
         while (currentY < totalHeight) {
             val remainingHeight = totalHeight - currentY
@@ -230,8 +252,8 @@ object PdfExportHelper {
             val page = pdfDocument.startPage(pageInfo)
             val canvas = page.canvas
 
-            // Pristine white page
-            canvas.drawColor(Color.WHITE)
+            // Page background (Pure OLED #000000 or clean #FFFFFF)
+            canvas.drawColor(pageBgColor)
 
             canvas.save()
             canvas.translate(A4_MARGIN_PT.toFloat(), A4_MARGIN_PT.toFloat())

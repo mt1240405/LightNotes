@@ -2,10 +2,13 @@ package com.lightnotes.app
 
 import android.view.KeyEvent
 import android.widget.EditText
+import android.widget.TableRow
 import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import com.lightnotes.app.core.model.Note
 import com.lightnotes.app.editor.EditHistoryManager
+import com.lightnotes.app.export.BatchExportHelper
 import com.lightnotes.app.export.PdfExportHelper
 import com.lightnotes.app.markdown.MarkdownEngine
 import com.lightnotes.app.markdown.MarkdownSegment
@@ -21,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.util.zip.ZipFile
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], shadows = [ShadowPdfDocument::class])
@@ -344,5 +348,118 @@ class EditorRegressionTest {
         assertEquals(2, headerRow.childCount)
         val cell0 = headerRow.getChildAt(0) as TextView
         assertEquals("Col A", cell0.text.toString().trim())
+    }
+
+    @Test
+    fun testWide4ColumnTableInPdfProportionalWidthAndNoClipping() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val markdownEngine = MarkdownEngine.getInstance(context)
+        val table = TableBlock(
+            headers = listOf("Module", "Architecture", "Version", "Latency SLA"),
+            rows = listOf(
+                listOf("Room v3 Outbox", "Local-first WAL SQLite", "v1.2.0", "< 2ms commit"),
+                listOf("M3 OLED Engine", "Zero-pixel #000000 custom tokens", "v1.2.0", "120 FPS fluid"),
+                listOf("Native TableLayout", "Proportional layout_weight stretch", "v1.2.0", "Zero overflow"),
+                listOf("Native Batch Zip", "java.util.zip isolated archives", "v1.2.0", "Non-blocking")
+            )
+        )
+
+        val tableLayout = MarkdownTableHelper.createTableLayout(
+            context = context,
+            table = table,
+            markwon = markdownEngine.markwon,
+            isNight = true,
+            isPrint = true
+        )
+
+        assertNotNull(tableLayout)
+        assertTrue("TableLayout in PDF mode must enable shrinkAllColumns", tableLayout.isShrinkAllColumns)
+        assertTrue("TableLayout in PDF mode must enable stretchAllColumns", tableLayout.isStretchAllColumns)
+        assertEquals(5, tableLayout.childCount) // 1 header + 4 data rows
+
+        for (i in 0 until tableLayout.childCount) {
+            val row = tableLayout.getChildAt(i) as TableRow
+            assertEquals("Every row must have exactly 4 columns", 4, row.childCount)
+            for (c in 0 until row.childCount) {
+                val cell = row.getChildAt(c) as TextView
+                val lp = cell.layoutParams as TableRow.LayoutParams
+                assertEquals("Cell width must be 0dp for weighted distribution", 0, lp.width)
+                assertEquals("Cell layout_weight must be 1.0f", 1.0f, lp.weight, 0.001f)
+                assertEquals("Cell text size in PDF print mode must be 11sp", 11f, cell.textSize, 0.001f)
+            }
+        }
+    }
+
+    @Test
+    fun testOledDarkPdfExportProducesValidPdfWithBlackCanvas() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val outputFile = java.io.File(context.cacheDir, "test_oled_dark_export.pdf")
+        if (outputFile.exists()) outputFile.delete()
+
+        val title = "OLED Dark Mode Architecture"
+        val content = """
+            # OLED Dark Specification
+            True #000000 zero-pixel black background for battery efficiency.
+            
+            | Surface | Hex Color | Role |
+            | --- | --- | --- |
+            | Canvas | #000000 | Zero-pixel pitch black |
+            | Card Surface | #121214 | Crisp dark card |
+            | Hairline Border | #242426 | 1dp boundary |
+            | Accent | #FFB200 | Vivid amber |
+        """.trimIndent()
+
+        PdfExportHelper.exportNoteToPdf(
+            context = context,
+            title = title,
+            content = content,
+            outputFile = outputFile,
+            dateStr = "25/11/2026, 1:30 AM",
+            wordCount = 35,
+            isOledDark = true
+        )
+
+        assertTrue("OLED Dark PDF must exist", outputFile.exists())
+        assertTrue("OLED Dark PDF size must be > 0", outputFile.length() > 0)
+
+        // Verify PDF Header signature (%PDF-)
+        val bytes = outputFile.readBytes()
+        val header = String(bytes.take(5).toByteArray(), Charsets.US_ASCII)
+        assertEquals("%PDF-", header)
+    }
+
+    @Test
+    fun testBatchZipExportCreatesValidZipWithIsolatedFiles() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val outputZip = java.io.File(context.cacheDir, "test_batch_export.zip")
+        if (outputZip.exists()) outputZip.delete()
+
+        val note1 = Note(title = "Release Notes", content = "# Release Notes v1.2.0\nNew batch export feature.")
+        val note2 = Note(title = "Release Notes", content = "# Duplicate Title\nTesting deduplication suffix.")
+        val note3 = Note(title = "Tasks / Checklists", content = "- [ ] Task 1\n- [x] Task 2")
+
+        BatchExportHelper.exportNotesToZip(
+            context = context,
+            notes = listOf(note1, note2, note3),
+            format = BatchExportHelper.Format.MARKDOWN,
+            outputZipFile = outputZip
+        )
+
+        assertTrue("Output ZIP must exist", outputZip.exists())
+        assertTrue("Output ZIP size must be > 0", outputZip.length() > 0)
+
+        // Inspect zip entries
+        val zipFile = ZipFile(outputZip)
+        val entries = zipFile.entries().asSequence().map { it.name }.toList()
+        zipFile.close()
+
+        assertEquals("Zip must contain exactly 3 files", 3, entries.size)
+        assertTrue("Must contain 'Release Notes.md'", entries.contains("Release Notes.md"))
+        assertTrue("Must contain deduplicated 'Release Notes_2.md'", entries.contains("Release Notes_2.md"))
+        assertTrue("Must contain sanitized 'Tasks _ Checklists.md'", entries.contains("Tasks _ Checklists.md"))
+
+        // Test filename sanitation helper
+        val sanitized = BatchExportHelper.sanitizeFilename("Folder/Sub:Test*Name?|<End>")
+        assertEquals("Folder_Sub_Test_Name___End_", sanitized)
     }
 }

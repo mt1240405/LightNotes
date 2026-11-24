@@ -1,5 +1,5 @@
 # LightNotes Lite — System Architecture Document
-**Target Version:** LightNotes Lite v1.1.0  
+**Target Version:** LightNotes Lite v1.2.0  
 **Status:** Living Engineering Standard  
 **Architectural North Star:** *Local-first now. Sync-ready by design. Cloud when needed.*  
 **Product Core Promise:** *Open -> Write -> Read -> Share*
@@ -172,8 +172,10 @@ The database transitions from Room v2 to Room v3 non-destructively using a robus
 * **Lightweight `/` Slash Command Popup:** Typing `/` opens an M3 `ListPopupWindow` for instant inline Markdown and AI inserts (`H1`, `H2`, `To-do`, `Bullet`, `Number`, `Image`, `Code`, `Quote`, `AI`).
 
 ### 4.7 Zero-Dependency Full Markdown Document Export Pipeline (`PdfExportHelper`)
-* **Full Markdown PDF Rendering:** Exported PDFs render complete formatted Markdown (headings, bold, italic, bullet & numbered lists, interactive checkboxes, blockquotes, code blocks, and styled tables) without WebViews or third-party engines.
-  * **Off-Screen Layout Measurement:** Builds an off-screen `LinearLayout` measured and laid out strictly at 1080px width using clean print palette styling (`#FFFFFF` background, `#111111` body text, `#555555` metadata, `#D1D1D6` hairline dividers and table borders, `#F2F2F7` code/table header backgrounds).
+* **Full Markdown PDF Rendering:** Exported PDFs render complete formatted Markdown (headings, bold, italic, bullet & numbered lists, interactive checkboxes, blockquotes, code blocks, styled tables, and synchronous inline images) without WebViews or third-party engines.
+  * **Off-Screen Layout Measurement:** Builds an off-screen `LinearLayout` measured and laid out strictly at 1080px width using clean print palette styling (`#FFFFFF` background, `#111111` body text, `#555555` metadata, `#D1D1D6` hairline dividers and table borders, `#F2F2F7` code/table header backgrounds) or OLED Dark styling (`#000000` canvas, `#F5F5F7` text, `#8E8E93` metadata, `#242426` borders, `#FFB200` links).
+  * **Proportional Table Sizing:** In PDF export, tables configure `isShrinkAllColumns = true`, `isStretchAllColumns = true`, and assign `TableRow.LayoutParams(0, WRAP_CONTENT, 1.0f)` with `BREAK_STRATEGY_SIMPLE` and `HYPHENATION_FREQUENCY_NORMAL` across all cells, guaranteeing wide 4-column tables fit cleanly within the 515pt printable width without horizontal clipping.
+  * **Synchronous Inline Images:** Local `file://` images are downsampled to printable width via `BitmapFactory.Options` and inserted as native `ImageView`s (`adjustViewBounds = true`, `FIT_CENTER`) into the off-screen layout before measuring.
   * **Intelligent Split-Point Detection:** Scans child view layouts to detect exact candidate split points from line boundaries (`TextView.layout.getLineBottom(line)`) and row boundaries (`TableRow.bottom`).
   * **Clean Multi-Page Pagination:** Scales the 1080px layout onto standard A4 pages (595x842 pt, 40 pt margins, scale factor $515 / 1080 \approx 0.47685$) via `android.graphics.pdf.PdfDocument`. Pages break cleanly between lines or table rows without slicing characters or cells across page margins.
 * **Full Markdown High-Res PNG Image:** Renders the 1080px layout onto a native `Bitmap` and `Canvas` with theme-aware palettes (pure OLED `#000000` dark or `#FFFFFF` light), compressing to lossless PNG in `cacheDir/shared_notes/`.
@@ -193,6 +195,17 @@ The database transitions from Room v2 to Room v3 non-destructively using a robus
 * **Architecture:** Communicates directly with user-configured OpenAI-compatible endpoints (`https://api.openai.com/v1/chat/completions`, OpenRouter, Groq, DeepSeek, or local Ollama/LM Studio) via standard `java.net.HttpURLConnection` and `org.json.JSONObject`.
 * **Security:** API key is stored locally in Jetpack DataStore preferences with zero telemetry.
 * **Actions:** One-tap `Summarize`, `Fix Grammar & Tone`, and `Format as Clean Markdown` with interactive preview dialog to Replace Selection, Replace Note, or Append.
+
+### 4.11 Batch Multi-Selection & Native ZIP Export Pipeline (`BatchExportHelper`)
+* **Contextual Selection:** Long-pressing any note card or tapping the selection icon activates multi-selection mode with custom amber checkmarks and tactile card borders.
+* **Zero Combined Merging:** To preserve note atomicity, notes are NEVER merged into a monolithic document. Instead, each selected note is rendered individually to a discrete file (`.md`, `.txt`, `.pdf` light/dark, or `.png`).
+* **Filename Deduplication & Sanitization:** Automatically scrubs illegal filesystem characters (`\ / : * ? " < > |`) and appends collision indices (`_2`, `_3`) for duplicate titles.
+* **Native Streaming ZIP:** Bundles all rendered files into `lightnotes_export_<timestamp>.zip` using `java.util.zip.ZipOutputStream` with temporary file cleanup in `finally`.
+* **Standard Sharesheet:** Shares the resulting `.zip` via `FileProvider` (`application/zip`) for seamless AirDrop, Bluetooth, Drive, or messaging transfers.
+
+### 4.12 Repository-Only Documentation & Settings Navigation
+* **Decoupled Assets:** The comprehensive user manual (`docs/USER_GUIDE.md`) resides strictly in repository documentation—completely excluded from APK assets to preserve the 2.50 MB binary footprint.
+* **Direct Link Navigation:** `SettingsActivity` provides direct external browser intents to view the User Guide and GitHub source code.
 
 ---
 
@@ -225,7 +238,10 @@ The codebase is backed by a 5-suite Robolectric + Espresso JVM test suite (`app/
    * Live unsaved text propagation to Android's native share intent.
    * Multi-line `<br>` variants, uneven column padding/truncation, and autolink normalization in tables.
    * Native `TableLayout` creation and 1dp border/palette styling.
+   * Wide 4-column tables in PDF export with proportional weighted column distribution and zero text truncation.
    * Valid `%PDF-` document export from rich Markdown documents without raw Markdown syntax leaks.
+   * True `#000000` OLED Dark PDF generation with pure black background canvas and `%PDF-` magic header.
+   * Native ZIP batch archive generation (`BatchExportHelper`) verifying exact entry count, deduplication suffixes, and filename sanitization.
 2. **`SearchAndFolderTest.kt`:**
    * Offline FTS4 search ranking title matches strictly above body matches.
    * Exclusion of deleted/trashed notes from search results.

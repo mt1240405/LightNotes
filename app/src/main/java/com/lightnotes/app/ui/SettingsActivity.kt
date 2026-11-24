@@ -98,6 +98,15 @@ class SettingsActivity : AppCompatActivity() {
             finish()
         }
         binding.tvAppVersion.text = "LightNotes Lite v${BuildConfig.VERSION_NAME}"
+
+        binding.btnUserGuide.setOnClickListener {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mt1240405/LightNotes/blob/main/docs/USER_GUIDE.md"))
+            startActivity(intent)
+        }
+        binding.btnGithubRepo.setOnClickListener {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mt1240405/LightNotes"))
+            startActivity(intent)
+        }
     }
 
     private fun setupThemeSettings() {

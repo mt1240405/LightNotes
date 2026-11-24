@@ -52,7 +52,12 @@ class ShareBottomSheet : BottomSheetDialogFragment() {
         }
 
         binding.btnSharePdf.setOnClickListener {
-            shareAsPdf()
+            shareAsPdf(isOledDark = false)
+            dismiss()
+        }
+
+        binding.btnSharePdfDark.setOnClickListener {
+            shareAsPdf(isOledDark = true)
             dismiss()
         }
 
@@ -157,13 +162,14 @@ class ShareBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    private fun shareAsPdf() {
+    private fun shareAsPdf(isOledDark: Boolean = false) {
         try {
             val dateStr = SimpleDateFormat("dd/MM/yyyy, h:mm a", Locale.getDefault()).format(Date())
             val words = if (noteContent.isBlank()) 0 else noteContent.trim().split(Regex("\\s+")).size
             val safeTitle = getSanitizedTitle()
             val sharedDir = File(requireContext().cacheDir, "shared_notes").apply { mkdirs() }
-            val pdfFile = File(sharedDir, "${safeTitle}.pdf")
+            val fileName = if (isOledDark) "${safeTitle}_dark.pdf" else "${safeTitle}.pdf"
+            val pdfFile = File(sharedDir, fileName)
 
             PdfExportHelper.exportNoteToPdf(
                 context = requireContext(),
@@ -171,7 +177,8 @@ class ShareBottomSheet : BottomSheetDialogFragment() {
                 content = noteContent,
                 outputFile = pdfFile,
                 dateStr = dateStr,
-                wordCount = words
+                wordCount = words,
+                isOledDark = isOledDark
             )
 
             val uri = FileProvider.getUriForFile(
@@ -184,11 +191,12 @@ class ShareBottomSheet : BottomSheetDialogFragment() {
                 type = "application/pdf"
                 putExtra(Intent.EXTRA_STREAM, uri)
                 if (noteTitle.isNotBlank()) {
-                    putExtra(Intent.EXTRA_SUBJECT, noteTitle)
+                    putExtra(Intent.EXTRA_SUBJECT, if (isOledDark) "$noteTitle (OLED Dark)" else noteTitle)
                 }
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            startActivity(Intent.createChooser(sendIntent, "Share Note PDF"))
+            val chooserTitle = if (isOledDark) "Share OLED Dark PDF" else "Share Note PDF"
+            startActivity(Intent.createChooser(sendIntent, chooserTitle))
         } catch (e: Exception) {
             Toast.makeText(requireContext(), "Failed to generate PDF: ${e.message}", Toast.LENGTH_SHORT).show()
         }

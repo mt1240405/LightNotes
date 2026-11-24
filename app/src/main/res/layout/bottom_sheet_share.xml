@@ -184,7 +184,7 @@
             android:layout_height="1dp"
             android:background="@color/divider" />
 
-        <!-- 4. Share as PDF Document -->
+        <!-- 4. Share as PDF (Light / Print) -->
         <LinearLayout
             android:id="@+id/btnSharePdf"
             android:layout_width="match_parent"
@@ -214,14 +214,14 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
-                    android:text="Share as PDF Document"
+                    android:text="Share as PDF (Light / Print)"
                     android:textColor="?attr/colorOnSurface"
                     android:textSize="14sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Standard A4 printable document"
+                    android:text="Clean white standard A4 printable document"
                     android:textColor="@color/text_hint"
                     android:textSize="11sp" />
             </LinearLayout>
@@ -232,7 +232,55 @@
             android:layout_height="1dp"
             android:background="@color/divider" />
 
-        <!-- 5. Cancel Action -->
+        <!-- 5. Share as PDF (OLED Dark) -->
+        <LinearLayout
+            android:id="@+id/btnSharePdfDark"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_text_format"
+                app:tint="@color/brand_amber" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Share as PDF (OLED Dark)"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="True #000000 dark A4 document with amber accents"
+                    android:textColor="@color/text_hint"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider" />
+
+        <!-- 6. Cancel Action -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
             style="@style/Widget.Material3.Button.TextButton"

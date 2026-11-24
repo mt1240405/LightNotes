@@ -1,9 +1,14 @@
 package com.lightnotes.app.markdown
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
+import android.os.Build
+import android.text.Layout
 import android.text.method.LinkMovementMethod
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +18,8 @@ import android.widget.TableLayout
 import android.widget.TableRow
 import android.widget.TextView
 import io.noties.markwon.Markwon
+import java.io.File
+import java.io.FileInputStream
 
 data class TableBlock(
     val headers: List<String>,
@@ -22,6 +29,7 @@ data class TableBlock(
 sealed class MarkdownSegment {
     data class Prose(val text: String, val checkboxOffset: Int) : MarkdownSegment()
     data class Table(val table: TableBlock) : MarkdownSegment()
+    data class Image(val altText: String, val uriString: String) : MarkdownSegment()
 }
 
 object MarkdownTableHelper {
@@ -31,6 +39,7 @@ object MarkdownTableHelper {
     private val AUTOLINK_URL_REGEX = Regex("<(https?://[^>\\s]+)>")
     private val AUTOLINK_MAIL_REGEX = Regex("<(mailto:[^>\\s]+)>")
     private val CODE_FENCE_REGEX = Regex("^\\s*(```|~~~)")
+    private val IMAGE_REGEX = Regex("^\\s*!\\[(.*?)\\]\\((.*?)\\)\\s*$")
 
     fun countCheckboxes(text: String): Int {
         if (text.isEmpty()) return 0
@@ -111,6 +120,23 @@ object MarkdownTableHelper {
                 continue
             }
 
+            if (!inCodeFence && IMAGE_REGEX.matches(line)) {
+                val match = IMAGE_REGEX.find(line)!!
+                val altText = match.groupValues[1]
+                val uriString = match.groupValues[2]
+
+                if (currentProseLines.isNotEmpty()) {
+                    val proseText = currentProseLines.joinToString("\n")
+                    segments.add(MarkdownSegment.Prose(proseText, runningCheckboxCount))
+                    runningCheckboxCount += countCheckboxes(proseText)
+                    currentProseLines.clear()
+                }
+
+                segments.add(MarkdownSegment.Image(altText, uriString))
+                i++
+                continue
+            }
+
             if (!inCodeFence && line.contains('|') && i + 1 < lines.size && isDelimiterRow(lines[i + 1])) {
                 val headerCells = splitTableRow(line).map { normalizeCellText(it) }
                 val delimiterCells = splitTableRow(lines[i + 1])
@@ -175,45 +201,43 @@ object MarkdownTableHelper {
     ): TableLayout {
         val density = context.resources.displayMetrics.density
         val borderWidth = maxOf(1, (1 * density).toInt())
-        val padding = (12 * density).toInt()
-        val minCellWidth = (88 * density).toInt()
+        val padding = if (isPrint) (8 * density).toInt() else (12 * density).toInt()
+        val minCellWidth = if (isPrint) 0 else (88 * density).toInt()
         val maxCellWidth = (240 * density).toInt()
+        val cellTextSize = if (isPrint) 11f else 14f
 
         val borderColor = when {
-            isPrint -> Color.parseColor("#D1D1D6")
             isNight -> Color.parseColor("#2C2C2E")
             else -> Color.parseColor("#D1D1D6")
         }
 
         val headerBg = when {
-            isPrint -> Color.parseColor("#F2F2F7")
             isNight -> Color.parseColor("#1C1C1E")
             else -> Color.parseColor("#F2F2F7")
         }
 
         val oddRowBg = when {
-            isPrint -> Color.parseColor("#FAFAFC")
-            isNight -> Color.parseColor("#0D0D0F")
+            isNight -> Color.parseColor("#121214")
             else -> Color.parseColor("#FAFAFC")
         }
 
         val evenRowBg = when {
-            isPrint -> Color.parseColor("#FFFFFF")
             isNight -> Color.parseColor("#000000")
             else -> Color.parseColor("#FFFFFF")
         }
 
         val textColor = when {
-            isPrint -> Color.parseColor("#111111")
             isNight -> Color.parseColor("#F5F5F7")
-            else -> Color.parseColor("#1A1B1E")
+            else -> Color.parseColor("#111111")
         }
 
         val tableLayout = TableLayout(context).apply {
             layoutParams = TableLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
+                if (isPrint) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
+            isShrinkAllColumns = isPrint
+            isStretchAllColumns = true
             val divider = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
                 setColor(borderColor)
@@ -227,8 +251,8 @@ object MarkdownTableHelper {
 
         // Header Row
         val headerRow = TableRow(context).apply {
-            layoutParams = TableRow.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
+            layoutParams = TableLayout.LayoutParams(
+                if (isPrint) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
             setBackgroundColor(headerBg)
@@ -245,19 +269,24 @@ object MarkdownTableHelper {
 
         table.headers.forEach { headerText ->
             val tv = TextView(context).apply {
-                layoutParams = TableRow.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-                minWidth = minCellWidth
+                layoutParams = if (isPrint) {
+                    TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 1.0f)
+                } else {
+                    TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                }
                 if (!isPrint) {
+                    minWidth = minCellWidth
                     maxWidth = maxCellWidth
                 }
                 setPadding(padding, padding, padding, padding)
-                textSize = 14f
+                textSize = cellTextSize
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(textColor)
                 setLineSpacing(0f, 1.25f)
+                if (isPrint && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    breakStrategy = Layout.BREAK_STRATEGY_SIMPLE
+                    hyphenationFrequency = Layout.HYPHENATION_FREQUENCY_NORMAL
+                }
                 linksClickable = !isPrint
                 if (!isPrint) {
                     movementMethod = LinkMovementMethod.getInstance()
@@ -271,8 +300,8 @@ object MarkdownTableHelper {
         // Data Rows
         table.rows.forEachIndexed { rowIndex, rowCells ->
             val dataRow = TableRow(context).apply {
-                layoutParams = TableRow.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                layoutParams = TableLayout.LayoutParams(
+                    if (isPrint) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
                 )
                 setBackgroundColor(if (rowIndex % 2 == 1) oddRowBg else evenRowBg)
@@ -289,18 +318,23 @@ object MarkdownTableHelper {
 
             rowCells.forEach { cellText ->
                 val tv = TextView(context).apply {
-                    layoutParams = TableRow.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    )
-                    minWidth = minCellWidth
+                    layoutParams = if (isPrint) {
+                        TableRow.LayoutParams(0, TableRow.LayoutParams.WRAP_CONTENT, 1.0f)
+                    } else {
+                        TableRow.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    }
                     if (!isPrint) {
+                        minWidth = minCellWidth
                         maxWidth = maxCellWidth
                     }
                     setPadding(padding, padding, padding, padding)
-                    textSize = 14f
+                    textSize = cellTextSize
                     setTextColor(textColor)
                     setLineSpacing(0f, 1.25f)
+                    if (isPrint && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        breakStrategy = Layout.BREAK_STRATEGY_SIMPLE
+                        hyphenationFrequency = Layout.HYPHENATION_FREQUENCY_NORMAL
+                    }
                     linksClickable = !isPrint
                     if (!isPrint) {
                         movementMethod = LinkMovementMethod.getInstance()
@@ -313,6 +347,47 @@ object MarkdownTableHelper {
         }
 
         return tableLayout
+    }
+
+    fun decodeSampledBitmap(context: Context, uriString: String, reqWidth: Int): Bitmap? {
+        return try {
+            val uri = Uri.parse(uriString)
+            val openStream: () -> java.io.InputStream? = {
+                when {
+                    uri.scheme == "content" -> context.contentResolver.openInputStream(uri)
+                    uri.scheme == "file" -> {
+                        val path = uri.path ?: uriString.removePrefix("file://")
+                        val file = File(path)
+                        if (file.exists()) FileInputStream(file) else null
+                    }
+                    else -> {
+                        val file = File(uriString.removePrefix("file://"))
+                        if (file.exists()) FileInputStream(file) else null
+                    }
+                }
+            }
+
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            openStream()?.use { BitmapFactory.decodeStream(it, null, options) }
+
+            if (options.outWidth <= 0 || options.outHeight <= 0) return null
+
+            var inSampleSize = 1
+            val halfWidth = options.outWidth / 2
+            while ((halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2
+            }
+
+            val decodeOptions = BitmapFactory.Options().apply {
+                this.inSampleSize = inSampleSize
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            }
+            openStream()?.use { BitmapFactory.decodeStream(it, null, decodeOptions) }
+        } catch (_: Throwable) {
+            null
+        }
     }
 
     fun createTableScrollView(

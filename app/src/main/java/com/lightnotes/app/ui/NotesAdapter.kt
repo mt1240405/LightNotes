@@ -19,10 +19,58 @@ import java.util.Locale
 
 class NotesAdapter(
     private val onNoteClicked: (Note, View) -> Unit,
-    private val onNoteLongClicked: (Note) -> Boolean
+    private val onNoteLongClicked: ((Note) -> Boolean)? = null
 ) : ListAdapter<Note, NotesAdapter.NoteViewHolder>(NoteDiffCallback()) {
 
     private val colorOsInterpolator = PathInterpolator(0.3f, 0.0f, 0.1f, 1.0f)
+
+    var isSelectionMode: Boolean = false
+        set(value) {
+            field = value
+            notifyDataSetChanged()
+        }
+    val selectedNoteIds = mutableSetOf<String>()
+    var onSelectionChanged: ((count: Int) -> Unit)? = null
+
+    fun startSelection(note: Note) {
+        isSelectionMode = true
+        selectedNoteIds.clear()
+        selectedNoteIds.add(note.globalId)
+        notifyDataSetChanged()
+        onSelectionChanged?.invoke(selectedNoteIds.size)
+    }
+
+    fun toggleSelection(note: Note) {
+        if (selectedNoteIds.contains(note.globalId)) {
+            selectedNoteIds.remove(note.globalId)
+        } else {
+            selectedNoteIds.add(note.globalId)
+        }
+        notifyDataSetChanged()
+        onSelectionChanged?.invoke(selectedNoteIds.size)
+    }
+
+    fun selectAll(notes: List<Note>) {
+        if (selectedNoteIds.size == notes.size) {
+            selectedNoteIds.clear()
+        } else {
+            selectedNoteIds.clear()
+            selectedNoteIds.addAll(notes.map { it.globalId })
+        }
+        notifyDataSetChanged()
+        onSelectionChanged?.invoke(selectedNoteIds.size)
+    }
+
+    fun clearSelection() {
+        selectedNoteIds.clear()
+        isSelectionMode = false
+        notifyDataSetChanged()
+        onSelectionChanged?.invoke(0)
+    }
+
+    fun getSelectedNotes(): List<Note> {
+        return currentList.filter { selectedNoteIds.contains(it.globalId) }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NoteViewHolder {
         val binding = ItemNoteCardBinding.inflate(
@@ -105,6 +153,34 @@ class NotesAdapter(
                 binding.layoutChecklistChip.visibility = View.GONE
             }
 
+            // Selection state styling
+            val isSelected = selectedNoteIds.contains(note.globalId)
+            val density = context.resources.displayMetrics.density
+            val pad14 = (14 * density).toInt()
+
+            if (isSelectionMode) {
+                binding.ivSelectionCheck.visibility = View.VISIBLE
+                val padStart = (38 * density).toInt()
+                binding.layoutCardContent.setPaddingRelative(padStart, pad14, pad14, pad14)
+
+                if (isSelected) {
+                    binding.ivSelectionCheck.setImageResource(R.drawable.ic_check_circle)
+                    binding.ivSelectionCheck.setColorFilter(ContextCompat.getColor(context, R.color.brand_amber))
+                    binding.cardNote.strokeWidth = (2 * density).toInt()
+                    binding.cardNote.strokeColor = ContextCompat.getColor(context, R.color.brand_amber)
+                } else {
+                    binding.ivSelectionCheck.setImageResource(R.drawable.ic_check_circle_outline)
+                    binding.ivSelectionCheck.setColorFilter(ContextCompat.getColor(context, R.color.text_hint))
+                    binding.cardNote.strokeWidth = (1 * density).toInt()
+                    binding.cardNote.strokeColor = ContextCompat.getColor(context, R.color.card_border)
+                }
+            } else {
+                binding.ivSelectionCheck.visibility = View.GONE
+                binding.layoutCardContent.setPaddingRelative(pad14, pad14, pad14, pad14)
+                binding.cardNote.strokeWidth = (1 * density).toInt()
+                binding.cardNote.strokeColor = ContextCompat.getColor(context, R.color.card_border)
+            }
+
             // Tactile press-scale micro-animation
             binding.cardNote.setOnTouchListener { v, event ->
                 when (event.action) {
@@ -129,10 +205,24 @@ class NotesAdapter(
             }
 
             binding.cardNote.setOnClickListener {
-                onNoteClicked(note, binding.cardNote)
+                if (isSelectionMode) {
+                    toggleSelection(note)
+                } else {
+                    onNoteClicked(note, binding.cardNote)
+                }
             }
             binding.cardNote.setOnLongClickListener {
-                onNoteLongClicked(note)
+                if (isSelectionMode) {
+                    toggleSelection(note)
+                    true
+                } else {
+                    if (onNoteLongClicked != null) {
+                        onNoteLongClicked.invoke(note)
+                    } else {
+                        startSelection(note)
+                        true
+                    }
+                }
             }
         }
 

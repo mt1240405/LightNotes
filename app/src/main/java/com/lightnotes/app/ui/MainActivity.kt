@@ -9,11 +9,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
@@ -27,12 +30,17 @@ import com.lightnotes.app.core.model.Folder
 import com.lightnotes.app.core.model.Note
 import com.lightnotes.app.data.PreferencesRepository
 import com.lightnotes.app.databinding.ActivityMainBinding
+import com.lightnotes.app.export.BatchExportHelper
 import com.lightnotes.app.security.BiometricHelper
 import com.lightnotes.app.ui.viewmodel.NotesFilter
 import com.lightnotes.app.ui.viewmodel.NotesFilterType
 import com.lightnotes.app.ui.viewmodel.NotesViewModel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
@@ -54,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupWindowInsets()
+        setupBackPressHandler()
         setupRecyclerViews()
         setupListeners()
         checkAppLock()
@@ -86,6 +95,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupBackPressHandler() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (notesAdapter.isSelectionMode) {
+                    exitSelectionMode()
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                    isEnabled = true
+                }
+            }
+        })
+    }
+
     private fun setupWindowInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val systemBars = insets.getInsets(
@@ -97,6 +120,13 @@ class MainActivity : AppCompatActivity() {
                 systemBars.top,
                 binding.toolbar.paddingRight,
                 binding.toolbar.paddingBottom
+            )
+
+            binding.selectionToolbar.setPadding(
+                binding.selectionToolbar.paddingLeft,
+                systemBars.top,
+                binding.selectionToolbar.paddingRight,
+                binding.selectionToolbar.paddingBottom
             )
 
             binding.rvNotes.setPadding(
@@ -135,10 +165,13 @@ class MainActivity : AppCompatActivity() {
                 openNoteEditor(note)
             },
             onNoteLongClicked = { note ->
-                showNoteContextMenu(note)
+                enterSelectionMode(note)
                 true
             }
         )
+        notesAdapter.onSelectionChanged = { count ->
+            updateSelectionUi(count)
+        }
 
         // Default: Linear list per Lite specification
         updateLayoutManager()
@@ -190,6 +223,30 @@ class MainActivity : AppCompatActivity() {
         binding.btnClearSearch.setOnClickListener {
             binding.etSearch.setText("")
         }
+
+        binding.btnSelect.setOnClickListener {
+            enterSelectionMode()
+        }
+
+        binding.btnCloseSelection.setOnClickListener {
+            exitSelectionMode()
+        }
+
+        binding.btnSelectAll.setOnClickListener {
+            handleSelectAll()
+        }
+
+        binding.btnPinSelected.setOnClickListener {
+            handlePinSelected()
+        }
+
+        binding.btnShareSelected.setOnClickListener {
+            handleShareSelected()
+        }
+
+        binding.btnDeleteSelected.setOnClickListener {
+            handleDeleteSelected()
+        }
     }
 
     private fun observeData() {
@@ -234,6 +291,164 @@ class MainActivity : AppCompatActivity() {
             putExtra(NoteEditorActivity.EXTRA_NOTE_ID, note.localId)
         }
         startActivity(intent)
+    }
+
+    private fun enterSelectionMode(note: Note? = null) {
+        binding.toolbar.visibility = View.GONE
+        binding.selectionToolbar.visibility = View.VISIBLE
+        binding.searchContainer.visibility = View.GONE
+        binding.fabAddNote.visibility = View.GONE
+
+        val isTrash = viewModel.filter.value.type == NotesFilterType.TRASH
+        if (isTrash) {
+            binding.btnPinSelected.setImageResource(R.drawable.ic_redo)
+            binding.btnPinSelected.contentDescription = "Restore Selected"
+        } else {
+            binding.btnPinSelected.setImageResource(R.drawable.ic_pin)
+            binding.btnPinSelected.contentDescription = "Pin Selected"
+        }
+
+        if (note != null) {
+            notesAdapter.startSelection(note)
+        } else {
+            notesAdapter.isSelectionMode = true
+        }
+    }
+
+    private fun exitSelectionMode() {
+        notesAdapter.clearSelection()
+        binding.toolbar.visibility = View.VISIBLE
+        binding.selectionToolbar.visibility = View.GONE
+        binding.searchContainer.visibility = View.VISIBLE
+        binding.fabAddNote.visibility = View.VISIBLE
+    }
+
+    private fun updateSelectionUi(count: Int) {
+        binding.tvSelectedCount.text = "$count selected"
+        val hasSelection = count > 0
+        binding.btnPinSelected.isEnabled = hasSelection
+        binding.btnPinSelected.alpha = if (hasSelection) 1f else 0.4f
+        binding.btnShareSelected.isEnabled = hasSelection
+        binding.btnShareSelected.alpha = if (hasSelection) 1f else 0.4f
+        binding.btnDeleteSelected.isEnabled = hasSelection
+        binding.btnDeleteSelected.alpha = if (hasSelection) 1f else 0.4f
+
+        val totalNotes = notesAdapter.currentList.size
+        if (count == totalNotes && totalNotes > 0) {
+            binding.btnSelectAll.setImageResource(R.drawable.ic_check_circle)
+            binding.btnSelectAll.setColorFilter(ContextCompat.getColor(this, R.color.brand_amber))
+        } else {
+            binding.btnSelectAll.setImageResource(R.drawable.ic_check_circle_outline)
+            binding.btnSelectAll.setColorFilter(ContextCompat.getColor(this, R.color.text_primary))
+        }
+    }
+
+    private fun handleSelectAll() {
+        notesAdapter.selectAll(notesAdapter.currentList)
+    }
+
+    private fun handlePinSelected() {
+        val selected = notesAdapter.getSelectedNotes()
+        if (selected.isEmpty()) return
+        val isTrash = viewModel.filter.value.type == NotesFilterType.TRASH
+        if (isTrash) {
+            for (note in selected) {
+                viewModel.restoreFromTrash(note.globalId)
+            }
+            Toast.makeText(this, "Restored ${selected.size} notes", Toast.LENGTH_SHORT).show()
+            exitSelectionMode()
+            return
+        }
+
+        val allPinned = selected.all { it.isPinned }
+        for (note in selected) {
+            if (note.isPinned == allPinned) {
+                viewModel.togglePin(note.globalId)
+            }
+        }
+        val msg = if (allPinned) "Unpinned ${selected.size} notes" else "Pinned ${selected.size} notes"
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        exitSelectionMode()
+    }
+
+    private fun handleDeleteSelected() {
+        val selected = notesAdapter.getSelectedNotes()
+        if (selected.isEmpty()) return
+        val isTrash = viewModel.filter.value.type == NotesFilterType.TRASH
+        if (isTrash) {
+            AlertDialog.Builder(this)
+                .setTitle("Delete Permanently?")
+                .setMessage("Permanently delete ${selected.size} ${if (selected.size == 1) "note" else "notes"}? This action cannot be undone.")
+                .setPositiveButton("Delete") { _, _ ->
+                    for (note in selected) {
+                        viewModel.permanentlyDelete(note.globalId)
+                    }
+                    Toast.makeText(this, "Permanently deleted ${selected.size} notes", Toast.LENGTH_SHORT).show()
+                    exitSelectionMode()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        } else {
+            AlertDialog.Builder(this)
+                .setTitle("Move to Trash?")
+                .setMessage("Move ${selected.size} ${if (selected.size == 1) "note" else "notes"} to Trash?")
+                .setPositiveButton("Move") { _, _ ->
+                    for (note in selected) {
+                        viewModel.moveToTrash(note.globalId)
+                    }
+                    Toast.makeText(this, "Moved ${selected.size} notes to Trash", Toast.LENGTH_SHORT).show()
+                    exitSelectionMode()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+    }
+
+    private fun handleShareSelected() {
+        val selected = notesAdapter.getSelectedNotes()
+        if (selected.isEmpty()) return
+
+        val formats = BatchExportHelper.Format.values()
+        val formatNames = formats.map { it.title }.toTypedArray()
+
+        AlertDialog.Builder(this)
+            .setTitle("Batch Export as ZIP (${selected.size} notes)")
+            .setItems(formatNames) { _, which ->
+                val chosenFormat = formats[which]
+                performBatchExport(selected, chosenFormat)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun performBatchExport(notes: List<Note>, format: BatchExportHelper.Format) {
+        lifecycleScope.launch {
+            try {
+                Toast.makeText(this@MainActivity, "Preparing ZIP export...", Toast.LENGTH_SHORT).show()
+                val sharedDir = File(cacheDir, "shared_notes").apply { mkdirs() }
+                val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                val zipFile = File(sharedDir, "lightnotes_export_$timestamp.zip")
+
+                BatchExportHelper.exportNotesToZip(this@MainActivity, notes, format, zipFile)
+
+                val uri = FileProvider.getUriForFile(
+                    this@MainActivity,
+                    "$packageName.fileprovider",
+                    zipFile
+                )
+
+                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/zip"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    putExtra(Intent.EXTRA_SUBJECT, "LightNotes Export ($timestamp)")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                startActivity(Intent.createChooser(sendIntent, "Share ZIP Archive"))
+                exitSelectionMode()
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun showNoteContextMenu(note: Note) {

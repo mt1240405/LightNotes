@@ -22,6 +22,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.BaseAdapter
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ListPopupWindow
 import android.widget.TextView
@@ -419,13 +420,13 @@ class NoteEditorActivity : AppCompatActivity() {
         val currentRev = viewModel.documentRevision.value
         val isNight = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val segments = MarkdownTableHelper.parseSegments(content)
-        val hasTable = segments.any { it is MarkdownSegment.Table }
+        val hasComplexBlocks = segments.any { it is MarkdownSegment.Table || it is MarkdownSegment.Image }
 
         while (binding.layoutPreviewContainer.childCount > 1) {
             binding.layoutPreviewContainer.removeViewAt(1)
         }
 
-        if (!hasTable) {
+        if (!hasComplexBlocks) {
             binding.tvNoteRendered.visibility = View.VISIBLE
             lifecycleScope.launch {
                 val spanned = markdownEngine.parseMarkdownAsync(content)
@@ -438,6 +439,9 @@ class NoteEditorActivity : AppCompatActivity() {
         } else {
             binding.tvNoteRendered.visibility = View.GONE
             renderedRevision = currentRev
+            val density = resources.displayMetrics.density
+            val screenWidth = resources.displayMetrics.widthPixels
+
             segments.forEach { segment ->
                 when (segment) {
                     is MarkdownSegment.Prose -> {
@@ -464,6 +468,25 @@ class NoteEditorActivity : AppCompatActivity() {
                             isNight
                         )
                         binding.layoutPreviewContainer.addView(tableScrollView)
+                    }
+                    is MarkdownSegment.Image -> {
+                        val bitmap = MarkdownTableHelper.decodeSampledBitmap(this, segment.uriString, screenWidth)
+                        if (bitmap != null) {
+                            val iv = ImageView(this).apply {
+                                layoutParams = LinearLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.WRAP_CONTENT
+                                ).apply {
+                                    topMargin = (8 * density).toInt()
+                                    bottomMargin = (8 * density).toInt()
+                                }
+                                adjustViewBounds = true
+                                scaleType = ImageView.ScaleType.FIT_CENTER
+                                contentDescription = segment.altText
+                                setImageBitmap(bitmap)
+                            }
+                            binding.layoutPreviewContainer.addView(iv)
+                        }
                     }
                 }
             }
@@ -707,29 +730,73 @@ class NoteEditorActivity : AppCompatActivity() {
         sheet.show(supportFragmentManager, "ShareBottomSheet")
     }
 
+    private data class OverflowMenuItem(
+        val id: Int,
+        val title: CharSequence,
+        val isDestructive: Boolean = false
+    )
+
     private fun showOverflowMenu() {
-        val popup = PopupMenu(this, binding.btnOverflowMenu, Gravity.END)
-        popup.menu.apply {
-            add(0, 1, 0, "Find in note")
-            add(0, 2, 1, if (isPinned) "Unpin note" else "Pin note")
-            add(0, 3, 2, if (isFavorite) "Remove from favorites" else "Add to favorites")
-            add(0, 4, 3, "Move to folder...")
-            add(0, 8, 4, "Add to Home screen")
-            if (aiApiKey.isNotBlank()) {
-                add(0, 9, 5, "AI Assistant ($aiModel)...")
-            }
-            add(0, 5, 6, if (isArchived) "Unarchive note" else "Archive note")
-            add(0, 6, 7, "Settings")
-            val deleteTitle = SpannableString("Delete note").apply {
-                setSpan(ForegroundColorSpan(Color.parseColor("#FF453A")), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
-            add(0, 7, 8, deleteTitle)
+        val density = resources.displayMetrics.density
+        val items = mutableListOf(
+            OverflowMenuItem(1, "Find in note"),
+            OverflowMenuItem(2, if (isPinned) "Unpin note" else "Pin note"),
+            OverflowMenuItem(3, if (isFavorite) "Remove from favorites" else "Add to favorites"),
+            OverflowMenuItem(4, "Move to folder..."),
+            OverflowMenuItem(8, "Add to Home screen")
+        )
+        if (aiApiKey.isNotBlank()) {
+            items.add(OverflowMenuItem(9, "AI Assistant"))
+        }
+        items.add(OverflowMenuItem(5, if (isArchived) "Unarchive note" else "Archive note"))
+        items.add(OverflowMenuItem(6, "Settings"))
+        items.add(OverflowMenuItem(7, "Delete note", isDestructive = true))
+
+        val listPopup = ListPopupWindow(this).apply {
+            anchorView = binding.btnOverflowMenu
+            setDropDownGravity(Gravity.END)
+            width = (220 * density).toInt()
+            isModal = true
+            setBackgroundDrawable(ContextCompat.getDrawable(this@NoteEditorActivity, R.drawable.bg_m3_popup_surface))
         }
 
-        popup.setOnMenuItemClickListener { item ->
+        val adapter = object : BaseAdapter() {
+            override fun getCount(): Int = items.size
+            override fun getItem(position: Int): OverflowMenuItem = items[position]
+            override fun getItemId(position: Int): Long = items[position].id.toLong()
+
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val item = items[position]
+                val textView = (convertView as? TextView) ?: TextView(this@NoteEditorActivity).apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        (48 * density).toInt()
+                    )
+                    gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                    val padH = (16 * density).toInt()
+                    setPadding(padH, 0, padH, 0)
+                    textSize = 14f
+                    val typedValue = android.util.TypedValue()
+                    theme.resolveAttribute(android.R.attr.selectableItemBackground, typedValue, true)
+                    setBackgroundResource(typedValue.resourceId)
+                }
+                textView.text = item.title
+                if (item.isDestructive) {
+                    textView.setTextColor(Color.parseColor("#FF453A"))
+                } else {
+                    textView.setTextColor(ContextCompat.getColor(this@NoteEditorActivity, R.color.text_primary))
+                }
+                return textView
+            }
+        }
+
+        listPopup.setAdapter(adapter)
+        listPopup.setOnItemClickListener { _, _, position, _ ->
+            val item = items[position]
+            listPopup.dismiss()
             val title = binding.etNoteTitle.text.toString()
             val content = binding.etNoteContent.text.toString()
-            when (item.itemId) {
+            when (item.id) {
                 1 -> {
                     binding.layoutSearchBar.visibility = View.VISIBLE
                     binding.etSearchQuery.requestFocus()
@@ -758,9 +825,8 @@ class NoteEditorActivity : AppCompatActivity() {
                     }
                 }
             }
-            true
         }
-        popup.show()
+        listPopup.show()
     }
 
     private fun pinToHomeScreen() {

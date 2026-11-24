@@ -8,15 +8,15 @@
 > *Local-first now. Sync-ready by design. Cloud when needed.*
 
 [![Android](https://img.shields.io/badge/Platform-Android%208.0%2B%20(API%2026%E2%80%9335)-3DDC84?style=flat-square&logo=android&logoColor=white)](https://developer.android.com)
-[![Release](https://img.shields.io/badge/Release-v1.1.0-FFB200?style=flat-square)](https://github.com/mt1240405/LightNotes/releases/tag/v1.1)
-[![APK Size](https://img.shields.io/badge/Release%20APK-2.49%20MB-00E676?style=flat-square)](https://github.com/mt1240405/LightNotes/releases/tag/v1.1)
+[![Release](https://img.shields.io/badge/Release-v1.2.0-FFB200?style=flat-square)](https://github.com/mt1240405/LightNotes/releases/tag/v1.2)
+[![APK Size](https://img.shields.io/badge/Release%20APK-2.5%20MB-00E676?style=flat-square)](https://github.com/mt1240405/LightNotes/releases/tag/v1.2)
 [![UI](https://img.shields.io/badge/UI-100%25%20Native%20Views%20%2B%20M3-000000?style=flat-square)](https://m3.material.io)
 [![Refresh Rate](https://img.shields.io/badge/Display-144Hz%20Peak-7C4DFF?style=flat-square)](#-key-features)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
 
 <br/>
 
-**[📥 Download Latest Release APK (v1.1.0 — 2.49 MB)](https://github.com/mt1240405/LightNotes/releases/tag/v1.1)** &nbsp;•&nbsp; **[📖 Architecture Guide](docs/ARCHITECTURE.md)** &nbsp;•&nbsp; **[🔄 Sync Specification](docs/SYNC_ARCHITECTURE.md)**
+**[📥 Download Latest Release APK (v1.2.0)](https://github.com/mt1240405/LightNotes/releases/tag/v1.2)** &nbsp;•&nbsp; **[📖 Architecture Guide](docs/ARCHITECTURE.md)** &nbsp;•&nbsp; **[📘 Complete User Guide](docs/USER_GUIDE.md)** &nbsp;•&nbsp; **[🔄 Sync Specification](docs/SYNC_ARCHITECTURE.md)**
 
 <br/>
 
@@ -63,10 +63,16 @@ Modern default note applications on phones (ColorOS Notes, Samsung Notes, Apple 
 * **Always in Reach:** Undo (`↶`) and Redo (`↷`) buttons are permanently pinned to the left of the bottom formatting toolbar—accessible instantly without horizontal scrolling while typing.
 * **Adaptive Dimming:** Automatically dims (`alpha = 0.35f`) when the history stack is empty.
 
-### 📤 Zero-Dependency 1-Tap Document Export
-Share your notes instantly in any format with zero heavy export libraries:
+### 🗂️ Batch Multi-Select & Native ZIP Archive Export
+* **Contextual Selection Bar:** Tap the selection icon or long-press any note card to enter batch mode with tactile checkmarks and vivid `#FFB200` amber borders.
+* **Batch Operations:** Select All, Pin/Unpin, or Delete/Restore multiple notes in one tap.
+* **Discrete ZIP Archive:** Export selected notes as an isolated `.zip` archive via `java.util.zip.ZipOutputStream` with ZERO external dependencies. Choose from Markdown, Plain Text, PDF (Light), PDF (OLED Dark), or PNG Images—each note is rendered individually into its own file with automatic filename deduplication (NO combined document merging).
+
+### 📤 Zero-Dependency 1-Tap Document Export & OLED Dark PDF
+Share individual notes instantly in any format with zero heavy export libraries:
+* **📄 Multi-Page Document (PDF):** Generates standard printable A4 (595x842 pt) multi-page PDF documents with proportional table layouts and downsampled inline images via native `android.graphics.pdf.PdfDocument`.
+* **🖤 OLED Dark PDF Mode:** Fill the entire A4 canvas with true `#000000` pitch black, `#F5F5F7` crisp off-white typography, and `#FFB200` amber accents.
 * **🖼️ High-Resolution Card Image (PNG):** Renders a pixel-perfect 1080px note card with theme background, title, metadata timestamp, separator line, and wrapped typography via native `Canvas` + `Bitmap`.
-* **📄 Multi-Page Document (PDF):** Generates standard printable A4 (595x842 pt) multi-page PDF documents with automatic line pagination and margins via native `android.graphics.pdf.PdfDocument`.
 * **📝 Raw Markdown (.md):** Exports standard Markdown files for Obsidian, Logseq, Notion, or GitHub.
 * **📋 Clean Plain Text:** Copies or shares text with Markdown formatting tokens cleanly stripped.
 
