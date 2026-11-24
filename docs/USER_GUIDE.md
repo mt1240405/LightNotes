@@ -1,209 +1,59 @@
-# LightNotes Lite — Complete User Guide
-**Product Promise:** *Open -> Write -> Read -> Share*  
-**Core Standard:** *Local-first now. Sync-ready by design. Cloud when needed.*
+# LightNotes Lite — User Guide
 
-Welcome to **LightNotes Lite**, a fast, private, zero-bloat technical notebook and developer scratchpad for Android. LightNotes Lite runs 100% on native Kotlin/JVM, Android Views, and Material 3 without WebViews, heavy JavaScript bridges, or mandatory cloud lock-in.
+Welcome to **LightNotes Lite**, a fast, distraction-free notebook built for everyday writing, checklists, and private note-taking on your phone. Your notes save automatically on your device with no account required.
 
 ---
 
-## Table of Contents
-1. [Getting Started](#1-getting-started)
-2. [Markdown Editing & Interactive Checklists](#2-markdown-editing--interactive-checklists)
-3. [The `/` Slash Commands Menu](#3-the--slash-commands-menu)
-4. [Markdown Tables & Inline Images](#4-markdown-tables--inline-images)
-5. [Document Export & Native Sharing](#5-document-export--native-sharing)
-6. [Folders & FTS4 Full-Text Search](#6-folders--fts4-full-text-search)
-7. [Batch Multi-Select & ZIP Archive Export](#7-batch-multi-select--zip-archive-export)
-8. [Backups & Encryption (JSON & .enotes)](#8-backups--encryption-json--enotes)
-9. [Biometric App Lock](#9-biometric-app-lock)
-10. [BYOK AI Assistant Configuration](#10-byok-ai-assistant-configuration)
+## 1. Creating & Editing Notes
+- **Start Writing:** Tap the amber **`+`** button on the home screen to create a new note. Your title and text save automatically as you type.
+- **Undo & Redo:** Use the pinned **Undo (`↶`)** and **Redo (`↷`)** buttons on the left side of the bottom bar to step backward or forward anytime.
+- **Formatting Bar:** Scroll the bottom toolbar to add **Bold**, *Italic*, Headings, Bullet Lists, Numbered Lists, Checklists, Links, Quotes, Code Blocks, or Photos.
+- **Quick `/` Menu:** Type **`/`** anywhere on a new line (or after a space) to open a quick-insert menu for headings, to-do checkboxes, lists, photos, quotes, and more.
 
----
+## 2. Preview & Checklists
+- **Switch Edit / Preview:** Tap **Preview** (eye icon) at the top of the editor to view formatted headings, tables, links, and photos cleanly. Tap **Edit** to keep writing.
+- **Interactive Checklists:** Add to-do items using the checklist button (or `- [ ] `). In **Preview** mode, tap any checkbox directly to check or uncheck it—your note updates and saves right away. Note cards on the home screen also show your checklist progress (such as `2/5`).
+- **Add Gallery Photos:** Tap the **Image** button in the formatting bar (or type `/Image`) to pick a photo from your phone's gallery and place it in your note.
 
-## 1. Getting Started
+## 3. Organizing & Finding Notes
+- **Folders:** Tap the tabs across the top of the home screen (`All Notes`, `Favorites`, `Archive`, `Trash`, or your custom folders) to filter your notes. To move a note, open it, tap **`⋮`**, and choose **Move to folder...**.
+- **Pin & Favorite:** Pin important notes so they always stay at the top of your list, or mark them as favorites. Toggle either from the editor's **`⋮`** menu (or tap the pin icon next to the date).
+- **Home Screen Shortcuts:** Open a note and tap **`⋮` -> Add to Home screen** to put a one-tap shortcut straight onto your phone's home screen.
+- **Archive & Trash:** Archive finished notes to keep your main list tidy without deleting them. Deleted notes move to **Trash**, where you can restore them or delete them permanently.
+- **Instant Search:** Type in the home screen search bar to find notes immediately (title matches appear first), or tap **`⋮` -> Find in note** inside a note.
+- **List or Grid View:** Tap the grid/list button in the top-right bar on the home screen to switch layouts.
 
-### Installation & Launch
-- Download the official `app-release.apk` from the [GitHub Releases](https://github.com/mt1240405/LightNotes/releases) page.
-- LightNotes Lite requires Android 8.0 (API 26) or higher.
-- The release APK is under 3 MB and uses zero external tracking or background battery polling.
+## 4. Batch Actions
+Organize or share multiple notes at once from the home screen:
+1. **Enter Selection Mode:** Long-press any note card, or tap the **checkmark** icon in the top-right bar.
+2. **Pick Notes:** Tap cards to select or deselect them, or tap the **Select All** checkmark in the top bar.
+3. **Choose an Action:**
+   - **Pin / Unpin** (or **Restore** when viewing Trash) all selected notes in one tap.
+   - **Delete** selected notes to move them to Trash (or permanently delete them from Trash).
+   - **Share as ZIP:** Tap the **Share** icon to save or send all selected notes together in one `.zip` file—each note stays as its own separate file inside the ZIP (choose Markdown, Plain Text, PDF Light, PDF OLED Dark, or PNG Image).
 
-### Quick Tour of the Interface
-- **Notes List (Home Screen):** View all active notes in a clean linear card layout. Pinned notes display an amber bookmark indicator.
-- **Top Bar:** Quick view switcher (List vs Staggered Grid), Multi-Select button, and Settings gear icon.
-- **Search Bar:** Real-time SQLite FTS4 full-text search with title-weighted ranking.
-- **Folder Tabs:** Horizontally scrollable chips to filter notes by folder or view All notes.
-- **New Note FAB:** Amber circular action button (`+`) in the bottom right corner.
+## 5. Sharing & Exporting
+Open any note and tap the **Share** icon at the top to export or send it in five formats:
+- **Plain Text:** Shares a clean, unformatted text copy.
+- **Markdown (`.md`):** Exports a standard Markdown file ready for other note apps and editors.
+- **Image (`.png`):** Creates a crisp, high-resolution image of your formatted note.
+- **PDF (Light / Print):** Generates a clean white-page A4 PDF ideal for printing or sharing, complete with formatted tables and embedded photos.
+- **PDF (OLED Dark):** Generates a pitch-black A4 PDF designed for comfortable dark-mode reading on phone and tablet screens.
 
----
+## 6. Backups & Privacy
+Open **Settings** (gear icon on the home screen) to customize themes, lock the app, and manage backups:
+- **Theme:** Switch between **System Default**, **Light**, and **OLED Dark**.
+- **Fingerprint / Face Lock:** Turn on **Biometric App Lock** under Security to require your fingerprint, face unlock, or device PIN when opening the app.
+- **JSON Backup:** Tap **Export JSON Backup** to save a portable copy of your notes and folders, and **Restore JSON Backup** to merge notes back without overwriting newer edits.
+- **Password-Protected Backup (`.enotes`):** Tap **Export Encrypted Backup (.enotes)** to lock your backup with a passphrase before saving it to cloud storage or another device. Use **Restore Encrypted Backup (.enotes)** with the same passphrase to restore it.
+- **Import Realme / HeyTap Notes:** Moving from Realme or OPPO Notes? Tap **Import Realme / HeyTap Backup** and select your exported backup file to bring your notes over.
 
-## 2. Markdown Editing & Interactive Checklists
-
-### Writing in the Editor
-- **Autosave:** Edits to title and body are debounced and saved automatically to the local database. You never have to manually hit "Save".
-- **Undo / Redo:** Dedicated Undo (`↶`) and Redo (`↷`) buttons are pinned to the left of the bottom toolbar for quick thumb access, with support for physical keyboard shortcuts (`Ctrl+Z`, `Ctrl+Y`).
-- **Formatting Toolbar:** Easily insert Bold (`**text**`), Italic (`*text*`), Headings (`#`), Bullet Lists (`- `), Numbered Lists (`1. `), Checklists (`- [ ] `), Code Blocks (` ``` `), Quotes (`> `), Links, and Images.
-
-### Interactive Task Checklists
-- Create checklist items using standard Markdown syntax:
-  ```markdown
-  - [ ] Review sync architecture
-  - [x] Room database migration verified
-  ```
-- **Live Preview Checkbox Toggling:** In Preview mode (`Preview` button in the top toolbar), tap any checkbox directly to toggle it between checked (`[x]`) and unchecked (`[ ]`). The underlying raw Markdown content is updated immediately, preserving scroll position and triggering autosave.
-- **Home Screen Progress Badge:** Note cards with checklists show a progress chip (e.g., `3/5`) that turns green once all items are completed.
-
----
-
-## 3. The `/` Slash Commands Menu
-
-Typing `/` at the beginning of a line or after a space opens a compact Material 3 popup for rapid formatting insertions without reaching for the bottom toolbar:
-
-| Command | Action | Inserted Template |
-|:---|:---|:---|
-| `/H1` | H1 Section Title | `# ` |
-| `/H2` | H2 Subsection Heading | `## ` |
-| `/To-do` | Interactive Task Checkbox | `- [ ] ` |
-| `/Bullet` | Bulleted List Item | `- ` |
-| `/Number` | Numbered List Item | `1. ` |
-| `/Image` | Insert Local Photo | Opens system photo picker |
-| `/Link` | Markdown Link | `[text](url)` |
-| `/Code` | Multi-line Code Block | ` ```\n\n``` ` |
-| `/Quote` | Blockquote | `> ` |
-| `/AI` | Trigger AI Assistant | Prompts AI action on note |
-
----
-
-## 4. Markdown Tables & Inline Images
-
-### Markdown Tables
-LightNotes Lite includes a native `TableLayout` renderer that overcomes single-TextView table clipping limitations:
-- **Clean Column Wrapping:** Wide tables automatically distribute column widths with proportional weighting (`layout_weight = 1f`) and text auto-wrapping.
-- **Multi-line Cells:** `<br>`, `<br/>`, and `<br />` tags inside cells are converted into real line breaks (`\n`).
-- **Autolinks:** Angle-bracket URLs (`<https://example.com>`) are automatically formatted as standard Markdown links.
-- **Horizontal Scrolling:** In Preview mode, wide multi-column tables sit inside smooth native `HorizontalScrollView` containers with crisp 1dp hairline borders.
-
-Example table:
-```markdown
-| Feature | Supported | Notes |
-|:---|:---:|:---|
-| Native Markwon | Yes | Zero WebViews |
-| Room v3 Sync | Yes | Outbox delta logging |
-| OLED Dark Mode | Yes | True #000000 canvas |
-```
-
-### Inline Images
-- Tap the **Image** icon in the formatting bar or type `/Image` to select any picture using Android's native photo picker.
-- Images are copied locally to your device's private app storage (`filesDir/images/`) and referenced via `![image](file://...)`.
-- **Zero Black Gap Rendering:** Standalone images are rendered as dedicated native `ImageView`s (`adjustViewBounds = true`, `scaleType = FIT_CENTER`), eliminating empty black margins above and below previewed pictures.
-
----
-
-## 5. Document Export & Native Sharing
-
-Tap the **Share** icon in the editor toolbar to export and share your note in 5 different native formats:
-
-1. **Plain Text (`.txt`):** Strips Markdown formatting tokens and shares clean readable text via Android's native Sharesheet.
-2. **Markdown Document (`.md`):** Saves the note as a standard UTF-8 `.md` file, ready for Obsidian, Logseq, GitHub, or desktop text editors.
-3. **Rendered Image (`.png`):** Generates a crisp 1080px high-resolution note card with title, metadata, divider, and formatted text.
-4. **Share as PDF (Light / Print):**
-   - Generates a standard A4 printable PDF document ($595 \times 842\text{ pt}$).
-   - Clean white page background (`#FFFFFF`), `#111111` typography, and light gray styled tables.
-   - Intelligent line-bottom and row-bottom split detection prevents cutting text or table rows across page breaks.
-5. **Share as PDF (OLED Dark):**
-   - Full dark-theme PDF with zero-pixel `#000000` page backgrounds.
-   - `#F5F5F7` off-white typography, `#8E8E93` metadata, `#1C1C1E` / `#121214` table rows, `#2C2C2E` borders, and `#FFB200` amber link accents.
-   - Ideal for reading on OLED phones, tablets, or dark-mode PDF viewers.
-
----
-
-## 6. Folders & FTS4 Full-Text Search
-
-### Organizing with Folders
-- Assign any note to a folder via the overflow menu (`⋮` -> `Move to folder...`).
-- Filter notes on the Home Screen by tapping folder tabs (`All`, `Work`, `Personal`, `Ideas`, etc.).
-- Folders support custom colors and persistent metadata.
-
-### SQLite FTS4 Full-Text Search
-- Type any keyword in the search bar on the Home Screen.
-- Search queries execute against a native SQLite FTS4 virtual table with match ranking.
-- **Title-Weighted Ranking:** Notes matching the query in their title rank strictly higher than notes matching only in the body.
-- Pinned notes and recently updated notes receive subtle priority boosts.
-
----
-
-## 7. Batch Multi-Select & ZIP Archive Export
-
-To organize or export multiple notes simultaneously:
-
-### Entering Selection Mode
-- **Method 1:** Tap the **Select** checkmark button in the Home Screen top toolbar.
-- **Method 2:** Long-press any note card on the Home Screen.
-
-### Selection Toolbar Actions
-Once selection mode is active, the top bar transforms into a contextual action bar:
-- **Selected Counter:** Shows exact count of selected items (e.g. `3 selected`).
-- **Select All / Deselect All:** One-tap toggle to select all notes currently visible in the active filter.
-- **Pin / Unpin Selected:** Batch pin or unpin all selected notes.
-- **Delete Selected:** Move all selected notes to Trash.
-- **Share Selected (ZIP Archive):**
-  - **No Combined Document Merging:** Each note is rendered individually into its own clean file (`Note_Title.pdf`, `Note_Title_2.pdf` for duplicate titles).
-  - **Format Picker:** Choose your desired export format:
-    - Markdown (`.md`)
-    - Plain Text (`.txt`)
-    - PDF Document (Light / Print)
-    - PDF Document (OLED Dark)
-    - Rendered Image (`.png`)
-  - All individually rendered files are compressed into a single archive (`lightnotes_export_<timestamp>.zip`) using Android's native `java.util.zip.ZipOutputStream` (zero third-party dependencies) and shared via the native Sharesheet.
-
----
-
-## 8. Backups & Encryption (JSON & .enotes)
-
-Open **Settings** from the Home Screen toolbar to access backup and restore tools:
-
-### Portable JSON Backup (`.json`)
-- Exports all active notes, folders, and tags into an open standard JSON format.
-- Compatible with desktop scripts and automated converters.
-- Non-destructive import: Preserves newer modifications if timestamp conflicts occur.
-
-### Encrypted Backup (`.enotes`)
-- Encrypts your entire database using **AES-256-GCM** authenticated encryption with PBKDF2 key derivation (65,536 iterations).
-- Protects your data at rest when backing up to Google Drive, USB drives, or public cloud storage.
-- Restoring requires the exact passphrase entered during export.
-
-### HeyTap / ColorOS Importer
-- Import notes exported from ColorOS / Realme UI / OPPO HeyTap Notes app (`.zip` or `.txt` formats).
-
----
-
-## 9. Biometric App Lock
-
-For private journals, credentials, or sensitive work notes:
-- Navigate to **Settings -> Security -> Biometric Lock**.
-- Enable **Biometric App Lock**.
-- LightNotes Lite utilizes the Android Jetpack `BiometricPrompt` framework to require fingerprint, face unlock, or device PIN before displaying the note library.
-- When backgrounded or switched, the app immediately re-secures itself.
-
----
-
-## 10. BYOK AI Assistant Configuration
-
-LightNotes Lite includes a lightweight, zero-dependency Bring-Your-Own-Key (BYOK) AI client. It is **completely disabled by default** and contains zero third-party AI SDKs.
-
-### Setup Instructions
-1. Open **Settings -> AI Assistant (BYOK)**.
-2. Enter your **API Key**.
-3. Choose or customize your **API Endpoint**:
-   - **OpenAI:** `https://api.openai.com/v1/chat/completions` (Model: `gpt-4o-mini`)
-   - **Groq (Ultra-Fast):** `https://api.groq.com/openai/v1/chat/completions` (Model: `llama-3.3-70b-versatile`)
-   - **Gemini (OpenAI Compatibility):** `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` (Model: `gemini-1.5-flash`)
-   - **OpenRouter:** `https://openrouter.ai/api/v1/chat/completions` (Model: `google/gemini-2.0-flash-exp:free`)
-   - **Local Ollama:** `http://10.0.2.2:11434/v1/chat/completions` (Android Emulator) or your LAN IP.
-4. Set your preferred **Model Name**.
-
-### Using AI in the Editor
-When an API key is configured, the overflow menu displays **AI Assistant**:
-- **Summarize:** Generates a concise summary bullet list of your note.
-- **Fix Grammar & Tone:** Polishes spelling, grammar, and flow while keeping your original meaning intact.
-- **Format as Clean Markdown:** Formats messy raw notes with clean headings, bullet lists, and tables.
-- **Interactive Review:** Preview AI output with diff options before applying: *Replace Selection*, *Replace Note*, or *Append to Note*.
+## 7. Optional AI Assistant
+The AI helper is **off by default** and never sends anything unless you add your own key in **Settings -> AI Assistant (Optional BYOK)**:
+1. Tap **API Key** and paste a key from a provider of your choice (many offer free tiers):
+   - **Groq:** Endpoint `https://api.groq.com/openai/v1/chat/completions` (e.g., `llama-3.3-70b-versatile`)
+   - **Gemini:** Endpoint `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions` (e.g., `gemini-2.5-flash`)
+   - **OpenRouter:** Endpoint `https://openrouter.ai/api/v1/chat/completions`
+   - **Ollama (Local):** Point **API Endpoint URL** to your local server (e.g., `http://localhost:11434/v1/chat/completions`)
+2. Set the **API Endpoint URL** and **Model Name** to match your provider.
+3. Open any note and tap **`⋮` -> AI Assistant** (or type `/AI`) to use **Summarize Note**, **Fix Grammar & Tone**, or **Format as Clean Markdown**. You can review the result first and choose to replace a selection, replace the whole note, or append it.
